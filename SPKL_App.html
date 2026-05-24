@@ -1184,43 +1184,214 @@ select {
   opacity: 1 !important;
 }
 
-/* Native Time Input - Modern Style */
-input[type="time"] {
-  font-size: 1.1rem !important;
-  font-weight: 600 !important;
-  color: #0284c7 !important;
-  text-align: center !important;
-  cursor: pointer !important;
-  padding: 14px 10px !important;
-  background: linear-gradient(135deg, #f0f9ff, #e0f2fe) !important;
-  border: 1.5px solid #bae6fd !important;
-  border-radius: 12px !important;
-  letter-spacing: 1px !important;
-}
-input[type="time"]:focus {
-  border-color: #0284c7 !important;
-  box-shadow: 0 0 0 3px rgba(2,132,199,0.15) !important;
-  outline: none !important;
-}
-
-/* Time input wrapper label */
-.time-wrapper {
+/* Custom Time Picker - iOS Scroll Wheel Style */
+.time-picker-display {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+  align-items: stretch;
+}
+.time-picker-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1.5px solid #bae6fd;
+  border-radius: 14px;
+  padding: 14px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  gap: 4px;
+  -webkit-tap-highlight-color: transparent;
 }
-.time-wrapper .time-label {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  text-align: center;
-  margin-top: 4px;
+.time-picker-btn:active {
+  transform: scale(0.97);
+  background: #dbeafe;
+  border-color: #0284c7;
 }
-.time-sep {
-  font-size: 1.3rem;
-  font-weight: 700;
+.time-picker-btn .tpb-label {
+  font-size: 0.7rem;
+  font-weight: 600;
   color: #0284c7;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.7;
+}
+.time-picker-btn .tpb-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #0369a1;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+.time-picker-btn .tpb-icon {
+  font-size: 1.1rem;
+  opacity: 0.5;
+}
+.time-sep-big {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #0284c7;
+  padding: 0 2px;
   flex-shrink: 0;
 }
+
+/* Time Picker Bottom Sheet */
+.tp-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 10000;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.tp-sheet-overlay.tp-open {
+  display: flex;
+  opacity: 1;
+}
+.tp-sheet {
+  width: 100%;
+  max-width: 480px;
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  padding: 0 0 24px 0;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
+}
+.tp-sheet-overlay.tp-open .tp-sheet {
+  transform: translateY(0);
+}
+.tp-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.tp-sheet-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+.tp-sheet-done {
+  background: #0284c7;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 22px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.tp-sheet-done:active { background: #0369a1; }
+.tp-wheels {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0;
+  padding: 16px 24px;
+  position: relative;
+}
+.tp-wheel-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.tp-wheel-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0284c7;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+.tp-wheel {
+  width: 100%;
+  height: 210px;
+  overflow: hidden;
+  position: relative;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.tp-wheel-items {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.15s ease;
+  padding: 84px 0;
+}
+.tp-item {
+  height: 42px;
+  line-height: 42px;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #94a3b8;
+  transition: all 0.15s;
+  width: 100%;
+  text-align: center;
+  flex-shrink: 0;
+}
+.tp-item.selected {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #0369a1;
+  transform: scale(1.05);
+}
+.tp-colon-big {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #0284c7;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  padding-top: 90px;
+  flex-shrink: 0;
+}
+/* Selection highlight bar */
+.tp-wheels::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 24px;
+  right: 24px;
+  transform: translateY(-50%);
+  height: 44px;
+  background: linear-gradient(90deg, rgba(2,132,199,0.1), rgba(2,132,199,0.07));
+  border: 1.5px solid rgba(2,132,199,0.25);
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 1;
+}
+/* Fade top/bottom of wheel */
+.tp-wheel::before, .tp-wheel::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  height: 80px;
+  z-index: 2;
+  pointer-events: none;
+}
+.tp-wheel::before {
+  top: 0;
+  background: linear-gradient(to bottom, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 100%);
+}
+.tp-wheel::after {
+  bottom: 0;
+  background: linear-gradient(to top, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 100%);
+}
+
 </style>
   <!-- Choices.js CSS + JS untuk dropdown cantik -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/styles/choices.min.css" />
@@ -1364,18 +1535,29 @@ input[type="time"]:focus {
               </div>
 
               <div class="form-group">
-                <label>Waktu Lembur / KJK (Jam) *</label>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                  <input type="time" id="waktuMulai" name="waktuMulai" required style="flex: 1;" />
-                  <span style="font-weight: bold; color: var(--text-muted);">-</span>
-                  <input type="time" id="waktuSelesai" name="waktuSelesai" required style="flex: 1;" />
+                  <label>Waktu Lembur / KJK (Jam) *</label>
+                  <div class="time-picker-display">
+                    <button type="button" class="time-picker-btn" id="btn-pick-mulai" onclick="openTimePicker('mulai')">
+                      <span class="tpb-label">Mulai</span>
+                      <span class="tpb-value" id="display-waktuMulai">--:--</span>
+                      <span class="tpb-icon">🕐</span>
+                    </button>
+                    <span class="time-sep-big">→</span>
+                    <button type="button" class="time-picker-btn" id="btn-pick-selesai" onclick="openTimePicker('selesai')">
+                      <span class="tpb-label">Selesai</span>
+                      <span class="tpb-value" id="display-waktuSelesai">--:--</span>
+                      <span class="tpb-icon">🕐</span>
+                    </button>
+                  </div>
+                  <div style="margin-top: 10px; font-weight: bold; color: var(--primary); font-size: 0.9rem; text-align:center;">
+                    Jumlah: <span id="totalJamLembur">0</span> Jam
+                  </div>
+                  <!-- Hidden inputs for form submission -->
+                  <input type="hidden" id="waktuMulai" name="waktuMulai" value="" />
+                  <input type="hidden" id="waktuSelesai" name="waktuSelesai" value="" />
+                  <input type="hidden" id="waktuLembur" name="waktuLembur" value="" />
+                  <input type="hidden" id="jmlJam" name="jmlJam" value="" />
                 </div>
-                <div style="margin-top: 8px; font-weight: bold; color: var(--primary); font-size: 0.9rem;">
-                  Jumlah: <span id="totalJamLembur">0</span> Jam
-                </div>
-                <input type="hidden" id="waktuLembur" name="waktuLembur" value="" />
-                <input type="hidden" id="jmlJam" name="jmlJam" value="" />
-              </div>
 
               <div class="form-group">
                 <label for="keterangan">Keterangan *</label>
@@ -2161,12 +2343,48 @@ function initForm() {
   const previewImg1 = document.getElementById('preview1');
   const previewName1 = document.getElementById('preview1-name');
 
+  // Utility untuk compress gambar sebelum diubah jadi base64 agar localStorage tidak penuh
+  function compressImage(file, callback) {
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        
+        // Max dimension 800px (ukuran ideal untuk eviden)
+        const MAX_SIZE = 800;
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height *= MAX_SIZE / width;
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width *= MAX_SIZE / height;
+            height = MAX_SIZE;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Kompresi kualitas 60% JPEG
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+        callback(dataUrl);
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
   function processFile1(file) {
     if (file) {
       if (previewName1) previewName1.textContent = file.name;
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        const fullBase64 = event.target.result;
+      compressImage(file, function(fullBase64) {
         if (previewImg1) previewImg1.src = fullBase64;
         if (previewWrap1) previewWrap1.style.display = 'block';
         const uploadArea1 = document.getElementById('upload-area-1');
@@ -2181,8 +2399,7 @@ function initForm() {
         } else {
           base64Photo = fullBase64;
         }
-      };
-      reader.readAsDataURL(file);
+      });
     } else {
       window.clearFoto1();
     }
@@ -2213,9 +2430,7 @@ function initForm() {
   function processFile2(file) {
     if (file) {
       if (previewName2) previewName2.textContent = file.name;
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        const fullBase64 = event.target.result;
+      compressImage(file, function(fullBase64) {
         if (previewImg2) previewImg2.src = fullBase64;
         if (previewWrap2) previewWrap2.style.display = 'block';
         const uploadArea2 = document.getElementById('upload-area-2');
@@ -3058,6 +3273,189 @@ function showToast(message, isError = false) {
   } catch(e) {
     console.warn('Choices.js gagal dimuat:', e);
   }
+
+  // ============================================================
+  // CUSTOM iOS-STYLE SCROLL WHEEL TIME PICKER
+  // ============================================================
+  (function() {
+    // Inject bottom sheet HTML
+    const sheet = document.createElement('div');
+    sheet.className = 'tp-sheet-overlay';
+    sheet.id = 'tp-overlay';
+    sheet.innerHTML = `
+      <div class="tp-sheet" id="tp-sheet">
+        <div class="tp-sheet-header">
+          <span class="tp-sheet-title" id="tp-title">Pilih Waktu</span>
+          <button class="tp-sheet-done" id="tp-done">Selesai</button>
+        </div>
+        <div class="tp-wheels">
+          <div class="tp-wheel-wrap">
+            <div class="tp-wheel-label">JAM</div>
+            <div class="tp-wheel" id="tp-wheel-h">
+              <div class="tp-wheel-items" id="tp-items-h"></div>
+            </div>
+          </div>
+          <div class="tp-colon-big">:</div>
+          <div class="tp-wheel-wrap">
+            <div class="tp-wheel-label">MENIT</div>
+            <div class="tp-wheel" id="tp-wheel-m">
+              <div class="tp-wheel-items" id="tp-items-m"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(sheet);
+
+    let currentTarget = null; // 'mulai' or 'selesai'
+    let selH = 7, selM = 0;
+
+    // Build wheel items
+    function buildWheel(containerId, count, pad, selected) {
+      const c = document.getElementById(containerId);
+      c.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const el = document.createElement('div');
+        el.className = 'tp-item' + (i === selected ? ' selected' : '');
+        el.textContent = String(i).padStart(pad, '0');
+        el.dataset.val = i;
+        c.appendChild(el);
+      }
+      scrollToSelected(document.getElementById(containerId.replace('items','wheel')), selected);
+    }
+
+    function scrollToSelected(wheel, idx) {
+      const itemH = 42;
+      const items = wheel.querySelector('.tp-wheel-items');
+      items.style.transition = 'none';
+      items.style.transform = `translateY(-${idx * itemH}px)`;
+      setTimeout(() => { items.style.transition = ''; }, 50);
+    }
+
+    function getSelectedIdx(wheel) {
+      const items = wheel.querySelector('.tp-wheel-items');
+      const match = items.style.transform.match(/-?[\d.]+/);
+      const offset = match ? parseFloat(match[0]) : 0;
+      return Math.max(0, Math.round(Math.abs(offset) / 42));
+    }
+
+    function updateSelectedStyle(wheel) {
+      const idx = getSelectedIdx(wheel);
+      wheel.querySelectorAll('.tp-item').forEach((el, i) => {
+        el.classList.toggle('selected', i === idx);
+      });
+      return idx;
+    }
+
+    // Touch/Mouse drag scroll
+    function initWheel(wheelEl, maxCount) {
+      const items = wheelEl.querySelector('.tp-wheel-items');
+      const itemH = 42;
+      let startY, startOffset = 0, isDragging = false;
+
+      function getOffset() {
+        const match = items.style.transform.match(/-?[\d.]+/);
+        return match ? parseFloat(match[0]) : 0;
+      }
+
+      function setOffset(offset) {
+        const maxOffset = -(maxCount - 1) * itemH;
+        offset = Math.max(maxOffset, Math.min(0, offset));
+        items.style.transform = `translateY(${offset}px)`;
+      }
+
+      function snap() {
+        const raw = getOffset();
+        const idx = Math.max(0, Math.min(maxCount - 1, Math.round(Math.abs(raw) / itemH)));
+        items.style.transition = 'transform 0.2s cubic-bezier(0.25,0.46,0.45,0.94)';
+        setOffset(-idx * itemH);
+        setTimeout(() => { items.style.transition = ''; updateSelectedStyle(wheelEl); }, 220);
+      }
+
+      wheelEl.addEventListener('touchstart', e => {
+        startY = e.touches[0].clientY;
+        startOffset = getOffset();
+        isDragging = true;
+        items.style.transition = 'none';
+      }, { passive: true });
+
+      wheelEl.addEventListener('touchmove', e => {
+        if (!isDragging) return;
+        const dy = e.touches[0].clientY - startY;
+        setOffset(startOffset + dy);
+        updateSelectedStyle(wheelEl);
+      }, { passive: true });
+
+      wheelEl.addEventListener('touchend', () => { isDragging = false; snap(); });
+
+      // Mouse drag
+      wheelEl.addEventListener('mousedown', e => {
+        startY = e.clientY; startOffset = getOffset(); isDragging = true;
+        items.style.transition = 'none';
+        e.preventDefault();
+      });
+      window.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+        setOffset(startOffset + (e.clientY - startY));
+        updateSelectedStyle(wheelEl);
+      });
+      window.addEventListener('mouseup', () => { if (isDragging) { isDragging = false; snap(); } });
+    }
+
+    window.openTimePicker = function(target) {
+      currentTarget = target;
+      const hidden = document.getElementById(target === 'mulai' ? 'waktuMulai' : 'waktuSelesai');
+      const val = hidden.value || (target === 'mulai' ? '08:00' : '16:00');
+      const [h, m] = val.split(':').map(Number);
+      selH = isNaN(h) ? (target === 'mulai' ? 8 : 16) : h;
+      selM = isNaN(m) ? 0 : m;
+
+      document.getElementById('tp-title').textContent = target === 'mulai' ? '⏰ Waktu Mulai' : '⏰ Waktu Selesai';
+
+      buildWheel('tp-items-h', 24, 2, selH);
+      buildWheel('tp-items-m', 60, 2, selM);
+
+      initWheel(document.getElementById('tp-wheel-h'), 24);
+      initWheel(document.getElementById('tp-wheel-m'), 60);
+
+      const overlay = document.getElementById('tp-overlay');
+      overlay.style.display = 'flex';
+      requestAnimationFrame(() => overlay.classList.add('tp-open'));
+    };
+
+    document.getElementById('tp-done').addEventListener('click', () => {
+      const hIdx = getSelectedIdx(document.getElementById('tp-wheel-h'));
+      const mIdx = getSelectedIdx(document.getElementById('tp-wheel-m'));
+      const hStr = String(hIdx).padStart(2,'0');
+      const mStr = String(mIdx).padStart(2,'0');
+      const timeVal = `${hStr}:${mStr}`;
+
+      if (currentTarget === 'mulai') {
+        document.getElementById('waktuMulai').value = timeVal;
+        document.getElementById('display-waktuMulai').textContent = timeVal;
+        document.getElementById('btn-pick-mulai').style.borderColor = '#0284c7';
+      } else {
+        document.getElementById('waktuSelesai').value = timeVal;
+        document.getElementById('display-waktuSelesai').textContent = timeVal;
+        document.getElementById('btn-pick-selesai').style.borderColor = '#0284c7';
+      }
+
+      // Trigger hitung lembur
+      if (typeof calculateLembur === 'function') calculateLembur();
+
+      closePicker();
+    });
+
+    document.getElementById('tp-overlay').addEventListener('click', function(e) {
+      if (e.target === this) closePicker();
+    });
+
+    function closePicker() {
+      const overlay = document.getElementById('tp-overlay');
+      overlay.classList.remove('tp-open');
+      setTimeout(() => { overlay.style.display = 'none'; }, 300);
+    }
+  })();
   </script>
   </body>
 

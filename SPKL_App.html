@@ -1121,10 +1121,47 @@ select {
   font-weight: 600;
   font-size: 0.95rem;
 }
+
+/* Choices.js Custom Styling */
+.choices__inner {
+  background: linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(240,249,255,0.7) 100%) !important;
+  border-radius: 12px !important;
+  border: 1px solid #cbd5e1 !important;
+  padding: 10px 16px !important;
+  min-height: 48px !important;
+  font-size: 0.95rem !important;
+  color: var(--text-main) !important;
+}
+.choices[data-type*="select-one"] .choices__inner {
+  padding-bottom: 2px !important;
+}
+.choices__list--dropdown {
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+  border: 1px solid #e2e8f0 !important;
+  overflow: hidden !important;
+  z-index: 9999 !important;
+}
+.choices__list--dropdown .choices__item--selectable {
+  padding: 12px 16px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+.choices__list--dropdown .choices__item--selectable.is-highlighted {
+  background: #f8fafc !important;
+  color: #0284c7 !important;
+}
+
+/* Flatpickr Mobile Size Fix */
+.flatpickr-calendar {
+  transform: scale(1.15) !important;
+  transform-origin: top center !important;
+  margin-top: 10px !important;
+}
+.flatpickr-time input {
+  font-size: 1.4rem !important;
+  height: 45px !important;
+}
 </style>
-  <!-- Flatpickr CSS untuk tampilan waktu modern -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-  <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   </head>
   <body>
@@ -2195,76 +2232,70 @@ function initForm() {
     spinner.classList.remove('hidden');
     btnSubmit.disabled = true;
 
-    if (needsApproval) {
-      // ── Simpan ke antrian persetujuan ──────────────────
-      const approvalEntry = { ...data };
-      delete approvalEntry.fotoBase64;
-      delete approvalEntry.fotoBase64_2;
-      // Cek apakah user yang submit memiliki jabatan "Koordinator"
-      const isJabatanKoordinator = (data.jabatan || '').toLowerCase().includes('koordinator');
-      
-      let finalSubmittedByRole = currentRole;
-      let finalApproverRole    = currentRole === 'operator' ? 'koordinator' : 'tl_teknik';
+    try {
+      if (needsApproval) {
+        // ── Simpan ke antrian persetujuan ──────────────────
+        const approvalEntry = { ...data };
+        delete approvalEntry.fotoBase64;
+        delete approvalEntry.fotoBase64_2;
+        // Cek apakah user yang submit memiliki jabatan "Koordinator"
+        const isJabatanKoordinator = (data.jabatan || '').toLowerCase().includes('koordinator');
+        
+        let finalSubmittedByRole = currentRole;
+        let finalApproverRole    = currentRole === 'operator' ? 'koordinator' : 'tl_teknik';
 
-      // Paksa routing ke TL Teknik jika jabatannya koordinator
-      if (isJabatanKoordinator) {
-        finalSubmittedByRole = 'koordinator';
-        finalApproverRole    = 'tl_teknik';
-      }
+        // Paksa routing ke TL Teknik jika jabatannya koordinator
+        if (isJabatanKoordinator) {
+          finalSubmittedByRole = 'koordinator';
+          finalApproverRole    = 'tl_teknik';
+        }
 
-      approvalEntry.id              = 'spkl_' + Date.now();
-      approvalEntry.timestamp       = Date.now();
-      approvalEntry.status          = 'MENUNGGU';
-      approvalEntry.submittedBy     = currentUser;
-      approvalEntry.submittedByRole = finalSubmittedByRole;
-      approvalEntry.approverRole    = finalApproverRole;
-      approvalEntry.rejectionNote   = '';
+        approvalEntry.id              = 'spkl_' + Date.now();
+        approvalEntry.timestamp       = Date.now();
+        approvalEntry.status          = 'MENUNGGU';
+        approvalEntry.submittedBy     = currentUser;
+        approvalEntry.submittedByRole = finalSubmittedByRole;
+        approvalEntry.approverRole    = finalApproverRole;
+        approvalEntry.rejectionNote   = '';
 
-      // Simpan base64 foto terpisah (jika ada) agar bisa dikirim saat approve
-      if (base64Photo) {
-        localStorage.setItem('spkl_foto_' + approvalEntry.id, JSON.stringify({
-          fotoBase64: base64Photo, fotoMimeType: photoMimeType,
-          fotoBase64_2: base64Photo2, fotoMimeType_2: photoMimeType2
-        }));
-      }
+        // Simpan base64 foto terpisah (jika ada) agar bisa dikirim saat approve
+        if (base64Photo) {
+          localStorage.setItem('spkl_foto_' + approvalEntry.id, JSON.stringify({
+            fotoBase64: base64Photo, fotoMimeType: photoMimeType,
+            fotoBase64_2: base64Photo2, fotoMimeType_2: photoMimeType2
+          }));
+        }
 
-      await new Promise(r => setTimeout(r, 600));
+        await new Promise(r => setTimeout(r, 600));
 
-      const queue = getApprovalQueue();
-      queue.unshift(approvalEntry);
-      if (queue.length > 100) queue.pop();
-      saveApprovalQueue(queue);
+        const queue = getApprovalQueue();
+        queue.unshift(approvalEntry);
+        if (queue.length > 100) queue.pop();
+        saveApprovalQueue(queue);
 
-      const approverLabel = finalApproverRole === 'tl_teknik' ? 'TL Teknik' : 'Koordinator';
-      showToast(`✅ Pengajuan terkirim! Menunggu persetujuan ${approverLabel}`);
+        const approverLabel = finalApproverRole === 'tl_teknik' ? 'TL Teknik' : 'Koordinator';
+        showToast(`✅ Pengajuan terkirim! Menunggu persetujuan ${approverLabel}`);
 
-      // Notifikasi suara + getar untuk approver (jika mereka sedang di halaman yang sama)
-      notifyApprover();
-      updateApprovalBadge();
+        // Notifikasi suara + getar untuk approver (jika mereka sedang di halaman yang sama)
+        notifyApprover();
+        updateApprovalBadge();
 
-      form.reset();
-      window.clearFoto1();
-      window.clearFoto2();
-      const totalJamSpan = document.getElementById('totalJamLembur');
-      if (totalJamSpan) totalJamSpan.textContent = '0';
-      document.getElementById('main-content').scrollTo({ top: 0, behavior: 'smooth' });
+        form.reset();
+        window.clearFoto1();
+        window.clearFoto2();
+        const totalJamSpan = document.getElementById('totalJamLembur');
+        if (totalJamSpan) totalJamSpan.textContent = '0';
+        document.getElementById('main-content').scrollTo({ top: 0, behavior: 'smooth' });
 
-      submitLabel.classList.remove('hidden');
-      spinner.classList.add('hidden');
-      btnSubmit.disabled = false;
-
-    } else {
-      // ── tl_teknik / admin: langsung kirim ke Google Sheet ──
-      const scriptUrl = localStorage.getItem('spkl_script_url');
-      if (!scriptUrl) {
-        showToast('Harap atur URL Google Script di Pengaturan terlebih dahulu!', true);
-        document.querySelector('[data-target="view-settings"]').click();
-        submitLabel.classList.remove('hidden');
-        spinner.classList.add('hidden');
-        btnSubmit.disabled = false;
-        return;
-      }
-      try {
+      } else {
+        // ── tl_teknik / admin: langsung kirim ke Google Sheet ──
+        const scriptUrl = localStorage.getItem('spkl_script_url');
+        if (!scriptUrl) {
+          showToast('Harap atur URL Google Script di Pengaturan terlebih dahulu!', true);
+          document.querySelector('[data-target="view-settings"]').click();
+          return;
+        }
+        
         const response = await fetch(scriptUrl, {
           method: 'POST',
           body: JSON.stringify(data),
@@ -2284,18 +2315,15 @@ function initForm() {
         window.clearFoto1();
         window.clearFoto2();
         document.querySelector('[data-target="view-dashboard"]').click();
-      } catch (error) {
-        showToast('Gagal: ' + (error.message || 'Koneksi gagal').substring(0, 80), true);
-      } finally {
-        submitLabel.classList.remove('hidden');
-        spinner.classList.add('hidden');
-        btnSubmit.disabled = false;
       }
+    } catch (error) {
+      console.error("Gagal submit:", error);
+      showToast('Gagal: ' + (error.message || 'Terjadi kesalahan').substring(0, 80), true);
+    } finally {
+      submitLabel.classList.remove('hidden');
+      spinner.classList.add('hidden');
+      btnSubmit.disabled = false;
     }
-
-    submitLabel.classList.remove('hidden');
-    spinner.classList.add('hidden');
-    btnSubmit.disabled = false;
   });
 
   // Reset tampilan jumlah jam saat form direset
@@ -2955,6 +2983,16 @@ function showToast(message, isError = false) {
     dateFormat: "H:i",
     time_24hr: true,
     disableMobile: true // Memaksa UI modern flatpickr di HP, bukan jam bawaan Android
+  });
+  
+  // Inisialisasi Choices.js pada semua elemen select (agar dropdown cantik)
+  const selects = document.querySelectorAll('select');
+  selects.forEach(select => {
+    new Choices(select, {
+      searchEnabled: false,
+      itemSelectText: '',
+      shouldSort: false
+    });
   });
   </script>
   </body>

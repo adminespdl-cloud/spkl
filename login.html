@@ -423,7 +423,7 @@
         <!-- Form title -->
         <p class="form-title">Masuk ke Akun Anda</p>
 
-        <!-- DB Status indicator -->
+        <!-- DB Status (hanya tampil saat error koneksi) -->
         <div id="db-status" style="display:none; align-items:center; gap:8px; border:1px solid; border-radius:10px; padding:10px 14px; font-size:0.82rem; font-weight:600; margin-bottom:16px; transition:all 0.3s;"></div>
 
         <!-- Error message -->
@@ -445,6 +445,7 @@
                 name="username"
                 placeholder="Masukkan NIP..."
                 autocomplete="off"
+                style="text-transform:uppercase;"
                 required
               />
               <svg class="input-icon" viewBox="0 0 24 24">
@@ -647,44 +648,30 @@
       // ── loadUsers: gviz dulu (langsung dari spreadsheet), GAS fallback ──
       async function loadUsers() {
         setDbStatus('loading');
-        // Metode 1: gviz JSONP – langsung baca dari Google Spreadsheet
-        // Tidak bergantung pada GAS deployment, pasti berhasil selama
-        // spreadsheet dibagikan "Anyone with the link can view"
         const ok1 = await loadViaGviz();
         if (ok1) { setDbStatus('ok'); return; }
-        // Metode 2: Apps Script JSONP (fallback jika gviz gagal)
         const ok2 = await loadViaAppsScript();
         if (ok2) { setDbStatus('ok'); return; }
-        // Semua gagal
         usersLoaded = false;
         setDbStatus('error');
       }
 
-      // ── Status indikator database ────────────────────────
+      // ── Status indikator database (hanya error yang ditampilkan) ──
       function setDbStatus(state) {
         const bar = document.getElementById('db-status');
         if (!bar) return;
-        if (state === 'loading') {
-          bar.style.display = 'flex';
-          bar.style.background = 'rgba(245,158,11,0.08)';
-          bar.style.borderColor = 'rgba(245,158,11,0.3)';
-          bar.style.color = '#d97706';
-          bar.innerHTML = '<svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;stroke-width:2;fill:none;animation:spin 1s linear infinite;flex-shrink:0"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg><span>Memuat data petugas...</span>';
-        } else if (state === 'ok') {
-          bar.style.display = 'flex';
-          bar.style.background = 'rgba(16,185,129,0.07)';
-          bar.style.borderColor = 'rgba(16,185,129,0.25)';
-          bar.style.color = '#059669';
-          bar.innerHTML = '<svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;stroke-width:2.5;fill:none;flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg><span>Database terhubung · ' + USERS.length + ' petugas</span>';
-          setTimeout(() => { bar.style.display = 'none'; }, 3000);
-        } else {
+        // Hanya tampilkan jika ERROR, sembunyikan untuk loading dan ok
+        if (state === 'error') {
           bar.style.display = 'flex';
           bar.style.background = 'rgba(225,29,72,0.07)';
           bar.style.borderColor = 'rgba(225,29,72,0.2)';
           bar.style.color = '#be123c';
-          bar.innerHTML = '<svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;stroke-width:2;fill:none;flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Gagal memuat database — periksa koneksi internet</span>';
+          bar.innerHTML = '<svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;stroke-width:2;fill:none;flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Gagal memuat data — periksa koneksi internet</span>';
+        } else {
+          bar.style.display = 'none';
         }
       }
+
 
       // ── Elements ─────────────────────────────────────────
       const form       = document.getElementById('login-form');
@@ -725,6 +712,13 @@
         // Tampilkan preview nama jika NIP sudah tersimpan
         setTimeout(() => showNamaPreview(savedUser), 1200);
       }
+
+      // ── Auto-uppercase NIP saat ketik ───────────────────────
+      usernameEl.addEventListener('input', function() {
+        const pos = this.selectionStart;
+        this.value = this.value.toUpperCase();
+        this.setSelectionRange(pos, pos);
+      });
 
       // ── Toggle password visibility ────────────────────────
       togglePw.addEventListener('click', () => {

@@ -1224,6 +1224,42 @@ input[type="time"]:focus {
   <script src="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/scripts/choices.min.js"></script>
   </head>
   <body>
+    <!-- ── Splash Screen (muncul saat halaman pertama dimuat di APK) ── -->
+    <div id="splash-screen" style="
+      position: fixed; inset: 0; z-index: 9999;
+      background: linear-gradient(135deg, #0f172a 0%, #0c2a4a 50%, #0d3b5e 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 20px;
+      transition: opacity 0.5s ease;
+    ">
+      <img src="./Logo SPKL.png" alt="Logo" style="width:80px;height:80px;object-fit:contain;animation:splashPulse 1.2s ease-in-out infinite;">
+      <div style="font-size:1.1rem;font-weight:700;color:#fff;letter-spacing:2px;">SPKL</div>
+      <div style="width:40px;height:3px;background:linear-gradient(90deg,#0284c7,#0d9488);border-radius:2px;animation:splashBar 1s ease-in-out infinite alternate;"></div>
+    </div>
+    <style>
+      @keyframes splashPulse { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.08);opacity:0.85} }
+      @keyframes splashBar { from{width:30px;opacity:0.5} to{width:60px;opacity:1} }
+    </style>
+
+    <!-- ── Custom Confirm Modal (menggantikan window.confirm() agar tidak muncul 'Halaman pada https://...') ── -->
+    <div id="custom-confirm-overlay" style="
+      display:none; position:fixed; inset:0; z-index:10000;
+      background:rgba(0,0,0,0.5); backdrop-filter:blur(4px);
+      align-items:center; justify-content:center;
+    ">
+      <div style="
+        background:#fff; border-radius:20px; padding:28px 24px;
+        max-width:300px; width:88%; box-shadow:0 20px 60px rgba(0,0,0,0.25);
+        animation:slideUpFade 0.25s ease;
+      ">
+        <p id="confirm-msg" style="font-size:1rem;font-weight:600;color:#0f172a;text-align:center;margin-bottom:20px;line-height:1.5;"></p>
+        <div style="display:flex;gap:10px;">
+          <button id="confirm-no" style="flex:1;padding:12px;border:1.5px solid #e2e8f0;border-radius:12px;background:#fff;font-size:0.95rem;font-weight:600;color:#64748b;cursor:pointer;">Batal</button>
+          <button id="confirm-yes" style="flex:1;padding:12px;border:none;border-radius:12px;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;font-size:0.95rem;font-weight:600;cursor:pointer;">Ya, Keluar</button>
+        </div>
+      </div>
+    </div>
+
     <div id="app-container">
       
       <!-- HEADER -->
@@ -1318,7 +1354,7 @@ input[type="time"]:focus {
 
               <div class="form-group">
                 <label for="keteranganLembur">Keterangan Lembur *</label>
-                <textarea id="keteranganLembur" name="keteranganLembur" rows="3" required placeholder="Tugas yang dikerjakan"></textarea>
+                <textarea id="keteranganLembur" name="keteranganLembur" rows="3" required placeholder="Tugas yang dikerjakan" style="text-transform:uppercase;"></textarea>
               </div>
 
               <div class="form-row">
@@ -2290,6 +2326,18 @@ function initForm() {
       return;
     }
 
+    // Validasi manual karena HTML5 form validation dibypass (novalidate) untuk WebView APK
+    let hasError = false;
+    const requiredInputs = form.querySelectorAll('[required]');
+    for (let i = 0; i < requiredInputs.length; i++) {
+      if (!requiredInputs[i].value.trim()) {
+        showToast('⚠ Harap lengkapi semua kolom yang wajib diisi.', true);
+        hasError = true;
+        break;
+      }
+    }
+    if (hasError) return;
+
     // Paksa hitung ulang sebelum submit
     if (typeof calculateLembur === 'function') calculateLembur();
 
@@ -2799,11 +2847,11 @@ function saveToHistory(data) {
 }
 
 function clearDashboard() {
-  if (confirm('Yakin ingin mengosongkan semua data riwayat lembur di perangkat ini?')) {
+  showCustomConfirm('Yakin ingin mengosongkan semua data riwayat lembur di perangkat ini?', () => {
     localStorage.removeItem('spkl_history');
     loadDashboard();
     showToast('Dashboard berhasil dikosongkan!');
-  }
+  });
 }
 
 function loadDashboard() {
@@ -3196,11 +3244,43 @@ function showToast(message, isError = false) {
         const logoutBtn = document.getElementById('btn-logout');
         if (logoutBtn) {
           logoutBtn.addEventListener('click', () => {
-            if (confirm('Keluar dari aplikasi?')) {
+            showCustomConfirm('Yakin ingin keluar dari aplikasi?', () => {
               sessionStorage.removeItem('spkl_auth');
               window.location.href = 'login.html';
-            }
+            });
           });
+        }
+
+        // ── Inisialisasi Custom Confirm Modal ──────────────────────
+        function showCustomConfirm(message, onYes) {
+          const overlay = document.getElementById('custom-confirm-overlay');
+          document.getElementById('confirm-msg').textContent = message;
+          overlay.style.display = 'flex';
+          document.getElementById('confirm-yes').onclick = () => {
+            overlay.style.display = 'none';
+            onYes();
+          };
+          document.getElementById('confirm-no').onclick = () => {
+            overlay.style.display = 'none';
+          };
+          overlay.onclick = (e) => { if (e.target === overlay) overlay.style.display = 'none'; };
+        }
+
+        // ── Auto uppercase keteranganLembur saat ketik ──────────────
+        const keterEl = document.getElementById('keteranganLembur');
+        if (keterEl) {
+          keterEl.addEventListener('input', function() {
+            const pos = this.selectionStart;
+            this.value = this.value.toUpperCase();
+            this.setSelectionRange(pos, pos);
+          });
+        }
+
+        // ── Sembunyikan Splash Screen setelah app siap ──────────────
+        const splash = document.getElementById('splash-screen');
+        if (splash) {
+          splash.style.opacity = '0';
+          setTimeout(() => { splash.style.display = 'none'; }, 500);
         }
       });
     })();

@@ -13,47 +13,94 @@ const SPREADSHEET_ID  = '1YiXREQJ4Xl39L1N6-FjPY40YoqZZcyCNLnEPi5drIJ4';
 const SHEET_PETUGAS   = 'Petugas';
 const SHEET_DATA_SPKL = 'Rekap Lembur';
 
-// ── GET: Ambil Data Petugas (Login) ──────────────────────────────────
+// ── GET: Ambil Data Petugas & Riwayat Lembur ────────────────────────
 function doGet(e) {
   try {
     const action = e.parameter && e.parameter.action;
     
-    // Jika tidak ada action=getUsers / getPetugas, coba kembalikan format lama 
-    // agar login fallback tetap aman
-    if (action !== 'getUsers' && action !== 'getPetugas') {
+    // Jika tidak ada action, kembalikan error
+    if (!action) {
       return respond({ error: 'Action tidak dikenali atau kosong' }, e);
     }
 
-    const ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(SHEET_PETUGAS);
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     
-    if (!sheet) {
-      return respond({ status: 'error', message: 'Sheet "' + SHEET_PETUGAS + '" tidak ditemukan.' }, e);
+    // ACTION 1: getPetugas / getUsers
+    if (action === 'getUsers' || action === 'getPetugas') {
+      const sheet = ss.getSheetByName(SHEET_PETUGAS);
+      if (!sheet) return respond({ status: 'error', message: 'Sheet "' + SHEET_PETUGAS + '" tidak ditemukan.' }, e);
+
+      const rows  = sheet.getDataRange().getValues();
+      const users = [];
+
+      for (let i = 1; i < rows.length; i++) {
+        const r   = rows[i];
+        const nip = String(r[0] || '').trim();
+        const pwd = String(r[1] || '').trim();
+        if (!nip || !pwd) continue;
+        users.push({
+          username:    nip,
+          password:    pwd,
+          nama:        String(r[2] || '').trim(),
+          jabatan:     String(r[3] || '').trim(),
+          penempatan:  String(r[4] || '').trim(),
+          role:        String(r[5] || 'operator').trim().toLowerCase()
+        });
+      }
+      
+      const sheetData = ss.getSheetByName(SHEET_DATA_SPKL);
+      const dataRowCount = sheetData ? sheetData.getLastRow() : 0;
+      return respond({ status: 'success', data: users, dataRowCount: dataRowCount, spreadsheetId: SPREADSHEET_ID }, e);
     }
-
-    const rows  = sheet.getDataRange().getValues();
-    const users = [];
-
-    // Mulai dari baris ke-2 (index 1) — skip header
-    for (let i = 1; i < rows.length; i++) {
-      const r   = rows[i];
-      const nip = String(r[0] || '').trim();
-      const pwd = String(r[1] || '').trim();
-      if (!nip || !pwd) continue;
-      users.push({
-        username:    nip,
-        password:    pwd,
-        nama:        String(r[2] || '').trim(),
-        jabatan:     String(r[3] || '').trim(),
-        penempatan:  String(r[4] || '').trim(),
-        role:        String(r[5] || 'operator').trim().toLowerCase()
-      });
+    
+    // ACTION 2: getHistory
+    else if (action === 'getHistory') {
+      const sheetData = ss.getSheetByName(SHEET_DATA_SPKL);
+      if (!sheetData) return respond({ status: 'error', message: 'Sheet "' + SHEET_DATA_SPKL + '" tidak ditemukan.' }, e);
+      
+      const rows = sheetData.getDataRange().getValues();
+      const history = [];
+      
+      // Susunan kolom: NO INDUK(0) | NAMA(1) | JABATAN(2) | PENEMPATAN(3) | KATEGORI(4) | KETERANGAN LEMBUR(5) | UPAH(6) | TGL LEMBUR(7) | SHIFT(8) | JAM KERJA(9) | WAKTU LEMBUR(10) | Jml JAM(11) | KETERANGAN(12) | EVIDEN 1(13) | EVIDEN 2(14) | MINGGU KE(15) | TIMESTAMP(16)
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r[1]) continue; // Skip jika NAMA kosong
+        
+        let tglStr = String(r[7] || '');
+        if (r[7] instanceof Date) {
+          tglStr = Utilities.formatDate(r[7], "Asia/Jakarta", "yyyy-MM-dd");
+        }
+        
+        history.unshift({ // unshift supaya yang terbaru (bawah) ada di atas array
+          noInduk: String(r[0] || ''),
+          nama: String(r[1] || ''),
+          jabatan: String(r[2] || ''),
+          penempatan: String(r[3] || ''),
+          kategori: String(r[4] || ''),
+          keteranganLembur: String(r[5] || ''),
+          tglLembur: tglStr,
+          shift: String(r[8] || ''),
+          jamKerja: String(r[9] || ''),
+          waktuLembur: String(r[10] || ''),
+          jmlJam: String(r[11] || '0'),
+          keteranganTambahan: String(r[12] || ''),
+          fotoUrl1: String(r[13] || ''),
+          fotoUrl2: String(r[14] || ''),
+          mingguKe: String(r[15] || ''),
+          timestamp: String(r[16] || ''),
+          status: 'DISETUJUI' // Karena ada di database, berarti status disetujui
+        });
+      }
+      
+      // Batasi 200 data terakhir agar memori HP/cache tidak terlalu berat
+      if (history.length > 200) history.length = 200;
+      
+      return respond({ status: 'success', data: history }, e);
     }
-
-    const sheetData = ss.getSheetByName(SHEET_DATA_SPKL);
-    const dataRowCount = sheetData ? sheetData.getLastRow() : 0;
-
-    return respond({ status: 'success', data: users, dataRowCount: dataRowCount, spreadsheetId: SPREADSHEET_ID }, e);
+    
+    else {
+      return respond({ error: 'Action tidak dikenali' }, e);
+    }
 
   } catch (err) {
     return respond({ status: 'error', message: err.message }, e);
@@ -116,8 +163,8 @@ function doPost(e) {
       data.waktuLembur || "",         // WAKTU LEMBUR / KJK (contoh: 08:00 - 13:00)
       data.jmlJam || "",              // Jml JAM (contoh: 5)
       data.keteranganTambahan || data.keterangan || "", 
-      fotoUrl1,                       // EVIDEN FOTO 1 (Link Google Drive)
-      fotoUrl2,                       // EVIDEN FOTO 2 (Link Google Drive)
+      fotoUrl1 || "",                       // EVIDEN FOTO 1 (Link Google Drive)
+      fotoUrl2 || "",                       // EVIDEN FOTO 2 (Link Google Drive)
       data.mingguKe || "",
       Utilities.formatDate(new Date(), "Asia/Jakarta", "dd/MM/yyyy HH:mm:ss") // TIMESTAMP
     ];

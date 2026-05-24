@@ -2144,6 +2144,27 @@ function initForm() {
     console.error('Gagal autofill data karyawan:', err);
   }
 
+  // Fungsi untuk mengambil Riwayat Lembur dari Google Sheet dan menyimpannya di Cache (localStorage)
+  async function fetchHistoryData() {
+    const scriptUrl = localStorage.getItem('spkl_script_url');
+    if (!scriptUrl) return;
+    try {
+      const response = await fetch(scriptUrl + "?action=getHistory");
+      const result = await response.json();
+      if (result.status === "success" && Array.isArray(result.data)) {
+        // Simpan 200 data terakhir ke cache HP
+        localStorage.setItem('spkl_history', JSON.stringify(result.data));
+        
+        // Refresh tampilan jika sedang dibuka
+        if (typeof loadDashboard === 'function') loadDashboard();
+        if (typeof loadApprovalView === 'function') loadApprovalView();
+        if (typeof loadReport === 'function') loadReport();
+      }
+    } catch (error) {
+      console.error("Gagal mengambil riwayat dari Google Sheet:", error);
+    }
+  }
+
   // Fungsi untuk update dropdown karyawan dari Google Sheet
   async function fetchKaryawanData() {
     const scriptUrl = localStorage.getItem('spkl_script_url');
@@ -2158,12 +2179,10 @@ function initForm() {
         karyawanData.length = 0; // Kosongkan array lama
         karyawanData.push(...result.data); // Isi dengan data dari Google Sheet
         
-        // Karena form SPKL sekarang menggunakan input readonly, 
-        // kita tidak perlu lagi me-render ulang options atau auto-fill dropdown di sini.
-        // Data karyawanData tetap diperbarui untuk keperluan filter report.
+        // Panggil juga fungsi untuk mengambil history
+        fetchHistoryData();
 
-        // Jika database Rekap Lembur kosong (hanya header / baris 0-1),
-        // bersihkan semua data yang menggantung di perangkat ini
+        // Jika database Rekap Lembur kosong (hanya header / baris 0-1), bersihkan cache
         if (result.dataRowCount !== undefined && result.dataRowCount <= 1) {
           let changed = false;
           if (localStorage.getItem('spkl_history') && localStorage.getItem('spkl_history') !== '[]') {
@@ -3005,6 +3024,10 @@ function initReport() {
   
   if(!selectPetugas || !selectTahun) return;
 
+  // Bersihkan opsi lama (agar tidak duplicate saat dipanggil ulang)
+  selectPetugas.innerHTML = '<option value="ALL">All Petugas</option>';
+  selectTahun.innerHTML = '';
+
   // Isi dropdown petugas
   karyawanData.forEach(k => {
     const opt = document.createElement('option');
@@ -3013,17 +3036,36 @@ function initReport() {
     selectPetugas.appendChild(opt);
   });
 
-  // Isi dropdown tahun (hanya tahun ini)
+  // Baca history untuk mendapatkan tahun-tahun yang ada
+  const history = JSON.parse(localStorage.getItem('spkl_history') || '[]');
+  const years = new Set();
+  history.forEach(entry => {
+    if (entry.tglLembur) {
+      const entryYear = new Date(entry.tglLembur).getFullYear();
+      if (!isNaN(entryYear)) years.add(entryYear);
+    }
+  });
+
+  // Selalu masukkan tahun saat ini
   const currentYear = new Date().getFullYear();
-  const optYear = document.createElement('option');
-  optYear.value = currentYear;
-  optYear.textContent = currentYear;
-  selectTahun.appendChild(optYear);
+  years.add(currentYear);
+
+  // Urutkan tahun dan masukkan ke dropdown
+  const sortedYears = Array.from(years).sort((a, b) => b - a);
+  sortedYears.forEach(y => {
+    const optYear = document.createElement('option');
+    optYear.value = y.toString();
+    optYear.textContent = y.toString();
+    selectTahun.appendChild(optYear);
+  });
   selectTahun.value = currentYear;
 
-  // Listener untuk auto-filter
-  selectPetugas.addEventListener('change', loadReport);
-  selectTahun.addEventListener('change', loadReport);
+  // Listener untuk auto-filter (pasang sekali saja)
+  if (!selectPetugas.hasAttribute('data-init')) {
+    selectPetugas.addEventListener('change', loadReport);
+    selectTahun.addEventListener('change', loadReport);
+    selectPetugas.setAttribute('data-init', 'true');
+  }
 }
 
 function loadReport() {

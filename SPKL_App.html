@@ -2532,8 +2532,9 @@ async function doApprove(id) {
     return;
   }
 
-  // ── Hapus dari antrian jika SUKSES (sudah selesai, tidak perlu tampil lagi) ──
-  queue.splice(idx, 1);
+  // ── JANGAN dihapus dari antrian agar Operator masih bisa melihat status "DISETUJUI" ──
+  // Akan dihapus otomatis setelah 24 jam oleh _cleanOldApprovalEntries()
+  queue[idx] = entry;
   saveApprovalQueue(queue);
 
   // Simpan ke history lokal

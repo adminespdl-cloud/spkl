@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>SPKL Padalarang</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="app-container">
+      
+      <!-- HEADER -->
+      <header class="glass-header">
+        <div class="header-content" style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <h1>SPKL Padalarang</h1>
+            <p>PT. Haleyora Power</p>
+          </div>
+          <button id="btn-logout" title="Keluar" style="
+            background: rgba(2,132,199,0.08);
+            border: none; border-radius: 50%;
+            width: 38px; height: 38px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: background 0.2s; flex-shrink: 0;
+          " onmouseover="this.style.background='rgba(225,29,72,0.12)'" onmouseout="this.style.background='rgba(2,132,199,0.08)'">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#0284c7" stroke-width="2.2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- MAIN CONTENT AREA -->
+      <main id="main-content">
+        
+        <!-- DASHBOARD VIEW -->
+        <section id="view-dashboard" class="view active">
+          <div class="dashboard-summary">
+            <div class="summary-card glass-card">
+              <h3>Total Lembur</h3>
+              <p class="summary-value" id="summary-total">0 Jam</p>
+            </div>
+            <div class="summary-card glass-card">
+              <h3>Entri Bulan Ini</h3>
+              <p class="summary-value" id="summary-entries">0</p>
+            </div>
+          </div>
+          
+          <div class="recent-list glass-card">
+            <div class="list-header">
+              <h2>Riwayat Terbaru</h2>
+              <button class="btn-text" id="btn-refresh">Refresh</button>
+            </div>
+            <div id="recent-entries" class="entries-container">
+              <!-- Entries will be populated here -->
+              <div class="empty-state">Belum ada data lembur</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- INPUT FORM VIEW -->
+        <section id="view-form" class="view">
+          <div class="form-container glass-card">
+            <h2>Buat SPKL Baru</h2>
+            <form id="spkl-form">
+              
+              <div class="form-group">
+                <label for="nama">Nama Karyawan *</label>
+                <select id="nama" name="nama" required>
+                  <option value="" disabled selected>Pilih Nama Karyawan...</option>
+                  <!-- Diisi otomatis via JavaScript -->
+                </select>
+              </div>
+
+              <!-- No Induk field hidden (auto-filled) -->
+              <input type="hidden" id="noInduk" name="noInduk" value="" />
+
+              <div class="form-row">
+                <div class="form-group half">
+                  <label for="penempatan">Penempatan</label>
+                  <input type="text" id="penempatan" name="penempatan" readonly class="readonly-input">
+                </div>
+              </div>
+
+
+
+              <div class="form-group">
+                <label for="jabatan">Jabatan</label>
+                <input type="text" id="jabatan" name="jabatan" readonly class="readonly-input">
+              </div>
+
+              <div class="form-group">
+                <label for="kategori">Kategori *</label>
+                <select id="kategori" name="kategori" required>
+                  <option value="" disabled selected>Pilih Kategori...</option>
+                  <option value="HLN">HLN</option>
+                  <option value="LEMBUR">LEMBUR</option>
+                  <option value="KJK">KJK</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="keteranganLembur">Keterangan Lembur *</label>
+                <textarea id="keteranganLembur" name="keteranganLembur" rows="3" required placeholder="Tugas yang dikerjakan"></textarea>
+              </div>
+
+              <div class="form-row">
+                <!-- Upah field hidden as requested -->
+                <input type="hidden" id="upah" name="upah" value="">
+                <div class="form-group half">
+                  <label for="tglLembur">Tgl Lembur *</label>
+                  <input type="date" id="tglLembur" name="tglLembur" required>
+                </div>
+                <div class="form-group half">
+                  <label>Minggu Ke</label>
+                  <input type="text" id="mingguKe" name="mingguKe" readonly class="readonly-input" placeholder="-">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group half">
+                  <label for="shift">Shift *</label>
+                  <select id="shift" name="shift" required>
+                    <option value="" disabled selected>Pilih Shift...</option>
+                    <option value="SHIFT 1">SHIFT 1</option>
+                    <option value="SHIFT 2">SHIFT 2</option>
+                    <option value="SHIFT 3">SHIFT 3</option>
+                    <option value="SHIFT MOTORIS">SHIFT MOTORIS</option>
+                    <option value="NON SHIFT">NON SHIFT</option>
+                  </select>
+                </div>
+                <div class="form-group half">
+                  <label for="jamKerja">Jam Kerja *</label>
+                  <select id="jamKerja" name="jamKerja" required>
+                    <option value="" disabled selected>Pilih Jam Kerja...</option>
+                    <option value="08.00-16.00">08.00-16.00</option>
+                    <option value="16.00-24.00">16.00-24.00</option>
+                    <option value="00.00-08.00">00.00-08.00</option>
+                    <option value="13.00-21.00">13.00-21.00</option>
+                    <option value="NON SHIFT">NON SHIFT</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Waktu Lembur / KJK (Jam) *</label>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                  <input type="time" id="waktuMulai" name="waktuMulai" required style="flex: 1;" />
+                  <span style="font-weight: bold; color: var(--text-muted);">-</span>
+                  <input type="time" id="waktuSelesai" name="waktuSelesai" required style="flex: 1;" />
+                </div>
+                <div style="margin-top: 8px; font-weight: bold; color: var(--primary); font-size: 0.9rem;">
+                  Jumlah: <span id="totalJamLembur">0</span> Jam
+                </div>
+                <input type="hidden" id="waktuLembur" name="waktuLembur" value="" />
+                <input type="hidden" id="jmlJam" name="jmlJam" value="" />
+              </div>
+
+              <div class="form-group">
+                <label for="keterangan">Keterangan *</label>
+                <select id="keterangan" name="keterangan" required>
+                  <option value="" disabled selected>Pilih Keterangan...</option>
+                  <option value="LANJUTAN">LANJUTAN</option>
+                  <option value="LEPAS LIBUR">LEPAS LIBUR</option>
+                  <option value="LIBUR">LIBUR</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="fotoEviden">Upload Foto Eviden (Opsional)</label>
+                <input type="file" id="fotoEviden" name="fotoEviden" accept="image/*" capture="environment" style="padding: 10px; background: rgba(0,0,0,0.02);">
+              </div>
+
+              <button type="submit" class="btn-primary" id="btn-submit">
+                <span>Simpan SPKL</span>
+                <div class="spinner hidden"></div>
+              </button>
+            </form>
+          </div>
+        </section>
+
+        <!-- INTEGRATION GUIDE VIEW -->
+        <section id="view-settings" class="view">
+          <div class="glass-card info-card">
+            <h2>Integrasi Google Sheet</h2>
+            <p>Untuk menyambungkan form ini (beserta fitur upload fotonya) ke Google Sheet Anda, perbarui script di Apps Script menjadi kode berikut:</p>
+            <ol>
+              <li>Buka Google Sheet "SPKL Padalarang".</li>
+              <li>Klik menu <strong>Ekstensi > Apps Script</strong>.</li>
+              <li>Hapus kode lama, ganti dengan kode di bawah. Simpan.</li>
+              <li>Penting: Klik <strong>Terapkan (Deploy) > Deployment Baru</strong> (Pilih Aplikasi Web, Akses Siapa Saja). <strong>Copy URL baru</strong> tersebut dan paste di bawah ini.</li>
+            </ol>
+            
+            <div class="code-block" style="max-height: 200px;">
+              <pre><code>function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+
+    // Coba cari sheet dengan nama "Rekap Lembur", jika tidak ada pakai sheet aktif
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName("Rekap Lembur");
+    if (!sheet) {
+      // Fallback: pakai sheet pertama / sheet aktif
+      sheet = ss.getActiveSheet();
+    }
+
+    var fileUrl = "";
+
+    // Upload foto ke Google Drive jika ada
+    if (data.fotoBase64 && data.fotoBase64 !== "") {
+      var byteCharacters = Utilities.base64Decode(data.fotoBase64);
+      var blob = Utilities.newBlob(byteCharacters, data.fotoMimeType, data.fotoFileName);
+      var file = DriveApp.createFile(blob);
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      fileUrl = file.getUrl();
+    }
+
+    // Cari baris kosong pertama mulai dari baris 4 (A4) karena baris 1-3 di-merge
+    var lastRow = sheet.getLastRow();
+    var nextRow = lastRow < 4 ? 4 : lastRow + 1;
+
+    // Tulis data ke kolom A-O sesuai header di baris 3
+    // A=NO INDUK, B=NAMA, C=JABATAN, D=PENEMPATAN,
+    // E=KATEGORI, F=KETERANGAN LEMBUR, G=UPAH,
+    // H=TGL LEMBUR, I=SHIFT, J=JAM KERJA,
+    // K=WAKTU LEMBUR/KJK, L=Jml JAM, M=KETERANGAN, N=EVIDEN, O=MINGGU KE
+    sheet.getRange(nextRow, 1, 1, 15).setValues([[
+      data.noInduk || "",
+      data.nama || "",
+      data.jabatan || "",
+      data.penempatan || "",
+      data.kategori || "",
+      data.keteranganLembur || "",
+      data.upah || "",
+      data.tglLembur || "",
+      data.shift || "",
+      data.jamKerja || "",
+      data.waktuLembur || "",
+      data.jmlJam || "",
+      data.keterangan || data.keteranganTambahan || "",
+      fileUrl,
+      data.mingguKe || ""
+    ]]);
+
+    return ContentService.createTextOutput(JSON.stringify({"status": "success", "url": fileUrl}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({"status": "error", "message": error.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName("petugas");
+    if (!sheet) {
+      return ContentService.createTextOutput(JSON.stringify({"status": "error", "message": "Sheet 'petugas' tidak ditemukan"}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // Baris 1 adalah header (NIP, Password, Nama, Jabatan, Penempatan, Role)
+    var data = sheet.getDataRange().getValues();
+    var petugas = [];
+    
+    for (var i = 1; i < data.length; i++) {
+      if (data[i][2]) { // Cek jika Nama (Kolom C) tidak kosong
+        petugas.push({
+          noInduk: data[i][0] || "",
+          password: data[i][1] || "",
+          nama: data[i][2] || "",
+          jabatan: data[i][3] || "",
+          penempatan: data[i][4] || "",
+          role: data[i][5] || ""
+        });
+      }
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({"status": "success", "data": petugas}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({"status": "error", "message": error.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}</code></pre>
+            </div>
+
+            <div class="form-group" style="margin-top: 1rem;">
+              <label for="scriptUrl">Google Apps Script URL Baru</label>
+              <input type="url" id="scriptUrl" placeholder="https://script.google.com/macros/s/.../exec">
+              <button class="btn-secondary" id="btn-save-url" style="margin-top: 0.5rem; width: 100%;">Simpan URL</button>
+            </div>
+            
+            <div id="url-status" class="status-msg hidden">URL Berhasil disimpan!</div>
+          </div>
+        </section>
+
+      </main>
+
+      <!-- BOTTOM NAVIGATION -->
+      <div class="nav-wrapper">
+        <nav class="bottom-nav glass-nav">
+          <a href="#" class="nav-item active" data-target="view-dashboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            <span>Beranda</span>
+          </a>
+          <a href="#" class="nav-item" data-target="view-form">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+            <span>Input SPKL</span>
+          </a>
+          <a href="#" class="nav-item" data-target="view-settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <span>Pengaturan</span>
+          </a>
+        </nav>
+      </div>
+
+    </div>
+    
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">
+      <span id="toast-message">Pesan</span>
+    </div>
+
+    <!-- Auth Guard + Role-based Menu -->
+    <script>
+      (function() {
+        const auth = sessionStorage.getItem('spkl_auth');
+        if (!auth) {
+          window.location.replace('login.html');
+          return;
+        }
+
+        const data = JSON.parse(auth);
+        const role = data.role || 'admin';
+
+        window.addEventListener('DOMContentLoaded', () => {
+
+          // ── Tampilkan nama user di header ───────────────────
+          const headerP = document.querySelector('.header-content p');
+          if (headerP) {
+            headerP.textContent = data.displayName
+              ? `${data.displayName} · PT. Haleyora Power`
+              : 'PT. Haleyora Power';
+          }
+
+          // ── Kontrol Menu Berdasarkan Role ───────────────────
+          //  admin       : Dashboard ✓ | Input SPKL ✓ | Pengaturan ✓
+          //  koordinator : Dashboard ✓ | Input SPKL ✓ | Pengaturan ✗
+          //  operator    : Dashboard ✗ | Input SPKL ✓ | Pengaturan ✗
+
+          const navDashboard = document.querySelector('.nav-item[data-target="view-dashboard"]');
+          const navSettings  = document.querySelector('.nav-item[data-target="view-settings"]');
+          const navForm      = document.querySelector('.nav-item[data-target="view-form"]');
+
+          if (role === 'operator') {
+            // Sembunyikan Dashboard & Pengaturan
+            if (navDashboard) navDashboard.style.display = 'none';
+            if (navSettings)  navSettings.style.display  = 'none';
+            // Langsung aktifkan Input SPKL
+            if (navForm) navForm.click();
+          } else if (role === 'koordinator') {
+            // Sembunyikan hanya Pengaturan
+            if (navSettings) navSettings.style.display = 'none';
+          }
+          // admin → tidak perlu diubah, semua tampil
+
+          // ── Logout button ───────────────────────────────────
+          const logoutBtn = document.getElementById('btn-logout');
+          if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+              if (confirm('Keluar dari aplikasi?')) {
+                sessionStorage.removeItem('spkl_auth');
+                window.location.href = 'login.html';
+              }
+            });
+          }
+        });
+      })();
+    </script>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
+

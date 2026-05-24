@@ -2285,6 +2285,11 @@ function initForm() {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
+    if (!navigator.onLine) {
+      showToast('⚠ Internet tidak terhubung! Silakan periksa jaringan Anda dan coba lagi.', true);
+      return;
+    }
+
     // Paksa hitung ulang sebelum submit
     if (typeof calculateLembur === 'function') calculateLembur();
 
@@ -2499,6 +2504,11 @@ function closeRejectModal() {
 }
 
 async function doApprove(id) {
+  if (!navigator.onLine) {
+    showToast('⚠ Internet tidak terhubung! Tidak dapat menyetujui pengajuan saat offline.', true);
+    return;
+  }
+
   const queue = getApprovalQueue();
   const idx   = queue.findIndex(e => e.id === id);
   if (idx === -1) return;
@@ -2738,6 +2748,10 @@ function loadApprovalView() {
 }
 
 async function _sendToGoogleSheet(entry, fotoData) {
+  if (!navigator.onLine) {
+    showToast('⚠ Internet tidak terhubung! Pengajuan gagal dikirim ke server.', true);
+    return false;
+  }
   // URL hardcode sebagai fallback utama (selalu tersedia)
   const HARDCODED_URL = 'https://script.google.com/macros/s/AKfycby4UZRJBBUnARVBC7GOb182qBCcjnxSUIoMHU0d2Ofouj9FED-53h67PbzMtOeuRuRu/exec';
   // Urutan prioritas: URL di entry → localStorage → hardcode
@@ -3095,6 +3109,16 @@ function showToast(message, isError = false) {
   } catch(e) {
     console.warn('Choices.js gagal dimuat:', e);
   }
+
+  // ── Deteksi Internet (Online/Offline) ─────────────────
+  window.addEventListener('offline', () => {
+    showToast('⚠ Internet terputus. Beberapa fitur mungkin tidak berfungsi.', true);
+  });
+  window.addEventListener('online', () => {
+    showToast('✅ Internet terhubung kembali!');
+    // Refresh dashboard jika ada perubahan tertunda
+    if (typeof loadDashboard === 'function') loadDashboard();
+  });
   </script>
   </body>
 

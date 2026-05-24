@@ -2737,11 +2737,12 @@ function loadApprovalView() {
 }
 
 async function _sendToGoogleSheet(entry, fotoData) {
-  // Prioritaskan URL yang disimpan di dalam entry (dikirim oleh operator)
-  // Fallback ke localStorage perangkat saat ini jika tidak ada
-  const scriptUrl = entry.scriptUrl || localStorage.getItem('spkl_script_url');
+  // URL hardcode sebagai fallback utama (selalu tersedia)
+  const HARDCODED_URL = 'https://script.google.com/macros/s/AKfycby4UZRJBBUnARVBC7GOb182qBCcjnxSUIoMHU0d2Ofouj9FED-53h67PbzMtOeuRuRu/exec';
+  // Urutan prioritas: URL di entry → localStorage → hardcode
+  const scriptUrl = entry.scriptUrl || localStorage.getItem('spkl_script_url') || HARDCODED_URL;
   if (!scriptUrl) {
-    showToast('⚠ URL Google Script belum diatur! Minta admin untuk mengatur URL di Pengaturan.', true);
+    showToast('⚠ URL Google Script belum diatur! Hubungi admin.', true);
     return false;
   }
   try {

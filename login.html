@@ -424,8 +424,8 @@
           <span id="error-text">Username atau password salah.</span>
         </div>
 
-        <!-- Login Form -->
-        <form id="login-form" autocomplete="on" novalidate>
+        <!-- Login Form Container (menggunakan div untuk mencegah Chrome Password Manager popup) -->
+        <div id="login-form">
 
           <!-- NIP -->
           <div class="form-group">
@@ -436,7 +436,7 @@
                 id="username"
                 name="username"
                 placeholder="Masukkan NIP..."
-                autocomplete="username"
+                autocomplete="off"
                 required
               />
               <svg class="input-icon" viewBox="0 0 24 24">
@@ -461,7 +461,7 @@
                 id="password"
                 name="password"
                 placeholder="Masukkan password..."
-                autocomplete="current-password"
+                autocomplete="new-password"
                 required
               />
               <svg class="input-icon" viewBox="0 0 24 24">
@@ -488,12 +488,12 @@
           </div>
 
           <!-- Submit -->
-          <button type="submit" class="btn-primary" id="btn-login">
+          <button type="button" class="btn-primary" id="btn-login">
             <span id="btn-label">Masuk</span>
             <div class="spinner hidden" id="spinner"></div>
           </button>
 
-        </form>
+        </div>
 
         <!-- Footer -->
         <p class="footer-note">
@@ -759,9 +759,7 @@
       });
 
       // ── Form submit ───────────────────────────────────────
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
+      async function handleLogin() {
         const uVal = usernameEl.value.trim();
         const pVal = passwordEl.value;
 
@@ -843,6 +841,13 @@
             loginAt:     Date.now()
           }));
 
+          // Otomatis simpan URL Google Script ke localStorage saat login
+          // Ini memastikan semua user (koordinator, TL, operator) punya URL tersimpan
+          // tanpa perlu manual isi di halaman Pengaturan
+          if (APPS_SCRIPT_URL && APPS_SCRIPT_URL !== 'PASTE_URL_DI_SINI') {
+            localStorage.setItem('spkl_script_url', APPS_SCRIPT_URL);
+          }
+
           // Remember NIP
           if (remember.checked) {
             localStorage.setItem('spkl_login_user', user.username);
@@ -875,7 +880,13 @@
           setTimeout(() => { card.style.transform = 'translateX(0)'; },    240);
           setTimeout(() => { card.style.transition = ''; }, 250);
         }
-      });
+      }
+
+      btnLogin.addEventListener('click', handleLogin);
+      
+      // Submit on Enter key
+      usernameEl.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
+      passwordEl.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleLogin(); });
 
       function showError(msg) {
         errorText.textContent = msg;

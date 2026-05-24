@@ -1122,47 +1122,109 @@ select {
   font-size: 0.95rem;
 }
 
-/* Choices.js Custom Styling */
+/* Choices.js Custom Styling - Modern Dropdown */
+.choices {
+  margin-bottom: 0 !important;
+}
 .choices__inner {
-  background: linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(240,249,255,0.7) 100%) !important;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%) !important;
   border-radius: 12px !important;
-  border: 1px solid #cbd5e1 !important;
-  padding: 10px 16px !important;
-  min-height: 48px !important;
+  border: 1.5px solid #cbd5e1 !important;
+  padding: 12px 16px 10px !important;
+  min-height: 50px !important;
   font-size: 0.95rem !important;
-  color: var(--text-main) !important;
+  color: #0f172a !important;
+  font-family: 'Outfit', sans-serif !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+  transition: border-color 0.2s !important;
+}
+.choices__inner:hover {
+  border-color: #0284c7 !important;
 }
 .choices[data-type*="select-one"] .choices__inner {
-  padding-bottom: 2px !important;
+  padding-right: 44px !important;
 }
-.choices__list--dropdown {
-  border-radius: 12px !important;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
-  border: 1px solid #e2e8f0 !important;
+.choices[data-type*="select-one"]:after {
+  border-color: #0284c7 transparent transparent !important;
+  right: 16px !important;
+}
+.choices[data-type*="select-one"].is-open:after {
+  border-color: transparent transparent #0284c7 !important;
+}
+.choices__list--dropdown, .choices__list[aria-expanded] {
+  border-radius: 14px !important;
+  box-shadow: 0 12px 32px rgba(2,132,199,0.15) !important;
+  border: 1.5px solid #e0f2fe !important;
   overflow: hidden !important;
   z-index: 9999 !important;
+  margin-top: 6px !important;
 }
-.choices__list--dropdown .choices__item--selectable {
-  padding: 12px 16px !important;
+.choices__list--dropdown .choices__item {
+  padding: 14px 18px !important;
   border-bottom: 1px solid #f1f5f9 !important;
+  font-size: 0.95rem !important;
+  font-family: 'Outfit', sans-serif !important;
+  color: #0f172a !important;
 }
-.choices__list--dropdown .choices__item--selectable.is-highlighted {
-  background: #f8fafc !important;
+.choices__list--dropdown .choices__item:last-child {
+  border-bottom: none !important;
+}
+.choices__list--dropdown .choices__item.is-highlighted {
+  background: linear-gradient(90deg, #e0f2fe, #f0f9ff) !important;
   color: #0284c7 !important;
+  font-weight: 600 !important;
+}
+.choices__list--single .choices__item {
+  padding: 0 !important;
+  color: #0f172a !important;
+  font-weight: 500 !important;
+}
+.choices__placeholder {
+  color: #94a3b8 !important;
+  opacity: 1 !important;
 }
 
-/* Flatpickr Mobile Size Fix */
-.flatpickr-calendar {
-  transform: scale(1.15) !important;
-  transform-origin: top center !important;
-  margin-top: 10px !important;
+/* Native Time Input - Modern Style */
+input[type="time"] {
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+  color: #0284c7 !important;
+  text-align: center !important;
+  cursor: pointer !important;
+  padding: 14px 10px !important;
+  background: linear-gradient(135deg, #f0f9ff, #e0f2fe) !important;
+  border: 1.5px solid #bae6fd !important;
+  border-radius: 12px !important;
+  letter-spacing: 1px !important;
 }
-.flatpickr-time input {
-  font-size: 1.4rem !important;
-  height: 45px !important;
+input[type="time"]:focus {
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 3px rgba(2,132,199,0.15) !important;
+  outline: none !important;
+}
+
+/* Time input wrapper label */
+.time-wrapper {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.time-wrapper .time-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 4px;
+}
+.time-sep {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #0284c7;
+  flex-shrink: 0;
 }
 </style>
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <!-- Choices.js CSS + JS untuk dropdown cantik -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/styles/choices.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/scripts/choices.min.js"></script>
   </head>
   <body>
     <div id="app-container">
@@ -2976,24 +3038,26 @@ function showToast(message, isError = false) {
     }, 3000);
   }
 
-  // Inisialisasi Flatpickr untuk input waktu
-  flatpickr("input[type=time]", {
-    enableTime: true,
-    noCalendar: true,
-    dateFormat: "H:i",
-    time_24hr: true,
-    disableMobile: true // Memaksa UI modern flatpickr di HP, bukan jam bawaan Android
-  });
-  
-  // Inisialisasi Choices.js pada semua elemen select (agar dropdown cantik)
-  const selects = document.querySelectorAll('select');
-  selects.forEach(select => {
-    new Choices(select, {
-      searchEnabled: false,
-      itemSelectText: '',
-      shouldSort: false
-    });
-  });
+  // Inisialisasi Choices.js pada semua elemen select (dropdown kustom cantik)
+  // Jalankan setelah DOM siap
+  try {
+    if (typeof Choices !== 'undefined') {
+      const selects = document.querySelectorAll('select');
+      selects.forEach(select => {
+        if (!select.dataset.choicesInit) {
+          new Choices(select, {
+            searchEnabled: false,
+            itemSelectText: '',
+            shouldSort: false,
+            allowHTML: false
+          });
+          select.dataset.choicesInit = 'true';
+        }
+      });
+    }
+  } catch(e) {
+    console.warn('Choices.js gagal dimuat:', e);
+  }
   </script>
   </body>
 

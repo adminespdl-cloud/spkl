@@ -286,6 +286,12 @@ body {
 .form-row .form-group {
   flex: 1;
 }
+@media (max-width: 480px) {
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+}
 
 label {
   display: block;
@@ -326,9 +332,34 @@ select option {
 }
 
 .readonly-input {
-  background: #f1f5f9;
-  color: var(--text-muted);
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  color: #334155;
+  border-left: 4px solid #0284c7 !important;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+  font-weight: 700;
   cursor: not-allowed;
+}
+
+/* Custom Modern Select Dropdown with transparent gradient and separator */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(240,249,255,0.7) 100%) !important;
+  background-image: 
+    linear-gradient(45deg, transparent 50%, #0284c7 50%),
+    linear-gradient(135deg, #0284c7 50%, transparent 50%),
+    linear-gradient(to bottom, rgba(2, 132, 199, 0.2), rgba(2, 132, 199, 0.2)) !important;
+  background-position:
+    calc(100% - 20px) calc(1em + 5px),
+    calc(100% - 15px) calc(1em + 5px),
+    calc(100% - 44px) 10px !important;
+  background-size:
+    5px 5px,
+    5px 5px,
+    1px calc(100% - 20px) !important;
+  background-repeat: no-repeat !important;
+  padding-right: 54px !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03) !important;
 }
 
 /* Buttons */
@@ -1091,6 +1122,10 @@ select option {
   font-size: 0.95rem;
 }
 </style>
+  <!-- Flatpickr CSS untuk tampilan waktu modern -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   </head>
   <body>
     <div id="app-container">
@@ -2208,11 +2243,15 @@ function initForm() {
       updateApprovalBadge();
 
       form.reset();
-      base64Photo = ''; photoMimeType = '';
-      base64Photo2 = ''; photoMimeType2 = '';
+      window.clearFoto1();
+      window.clearFoto2();
       const totalJamSpan = document.getElementById('totalJamLembur');
       if (totalJamSpan) totalJamSpan.textContent = '0';
       document.getElementById('main-content').scrollTo({ top: 0, behavior: 'smooth' });
+
+      submitLabel.classList.remove('hidden');
+      spinner.classList.add('hidden');
+      btnSubmit.disabled = false;
 
     } else {
       // ── tl_teknik / admin: langsung kirim ke Google Sheet ──
@@ -2242,11 +2281,15 @@ function initForm() {
 
         showToast('SPKL Berhasil Disimpan & Dikirim!');
         form.reset();
-        base64Photo = ''; photoMimeType = '';
-        base64Photo2 = ''; photoMimeType2 = '';
+        window.clearFoto1();
+        window.clearFoto2();
         document.querySelector('[data-target="view-dashboard"]').click();
       } catch (error) {
         showToast('Gagal: ' + (error.message || 'Koneksi gagal').substring(0, 80), true);
+      } finally {
+        submitLabel.classList.remove('hidden');
+        spinner.classList.add('hidden');
+        btnSubmit.disabled = false;
       }
     }
 
@@ -2899,13 +2942,21 @@ function showToast(message, isError = false) {
   toast.classList.remove('hidden');
   void toast.offsetWidth;
   toast.classList.add('show');
-  
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => toast.classList.add('hidden'), 300);
-  }, 3000);
-}
-</script>
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.classList.add('hidden'), 300);
+    }, 3000);
+  }
+
+  // Inisialisasi Flatpickr untuk input waktu
+  flatpickr("input[type=time]", {
+    enableTime: true,
+    noCalendar: true,
+    dateFormat: "H:i",
+    time_24hr: true,
+    disableMobile: true // Memaksa UI modern flatpickr di HP, bukan jam bawaan Android
+  });
+  </script>
   </body>
 
   <!-- Auth Guard + Role-based Menu -->

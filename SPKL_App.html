@@ -2343,48 +2343,12 @@ function initForm() {
   const previewImg1 = document.getElementById('preview1');
   const previewName1 = document.getElementById('preview1-name');
 
-  // Utility untuk compress gambar sebelum diubah jadi base64 agar localStorage tidak penuh
-  function compressImage(file, callback) {
-    const reader = new FileReader();
-    reader.onload = function(event) {
-      const img = new Image();
-      img.onload = function() {
-        const canvas = document.createElement('canvas');
-        let width = img.width;
-        let height = img.height;
-        
-        // Max dimension 800px (ukuran ideal untuk eviden)
-        const MAX_SIZE = 800;
-        if (width > height) {
-          if (width > MAX_SIZE) {
-            height *= MAX_SIZE / width;
-            width = MAX_SIZE;
-          }
-        } else {
-          if (height > MAX_SIZE) {
-            width *= MAX_SIZE / height;
-            height = MAX_SIZE;
-          }
-        }
-        
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        
-        // Kompresi kualitas 60% JPEG
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-        callback(dataUrl);
-      };
-      img.src = event.target.result;
-    };
-    reader.readAsDataURL(file);
-  }
-
   function processFile1(file) {
     if (file) {
       if (previewName1) previewName1.textContent = file.name;
-      compressImage(file, function(fullBase64) {
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const fullBase64 = event.target.result;
         if (previewImg1) previewImg1.src = fullBase64;
         if (previewWrap1) previewWrap1.style.display = 'block';
         const uploadArea1 = document.getElementById('upload-area-1');
@@ -2399,7 +2363,8 @@ function initForm() {
         } else {
           base64Photo = fullBase64;
         }
-      });
+      };
+      reader.readAsDataURL(file);
     } else {
       window.clearFoto1();
     }
@@ -2430,7 +2395,9 @@ function initForm() {
   function processFile2(file) {
     if (file) {
       if (previewName2) previewName2.textContent = file.name;
-      compressImage(file, function(fullBase64) {
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const fullBase64 = event.target.result;
         if (previewImg2) previewImg2.src = fullBase64;
         if (previewWrap2) previewWrap2.style.display = 'block';
         const uploadArea2 = document.getElementById('upload-area-2');

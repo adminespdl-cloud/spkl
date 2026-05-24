@@ -716,10 +716,15 @@
         }
       });
 
-      // ── Restore remembered NIP ────────────────────────────
+      // ── Restore remembered NIP & Password ────────────────────────────
       const savedUser = localStorage.getItem('spkl_login_user');
+      const savedPass = localStorage.getItem('spkl_login_pass');
+      
       if (savedUser) {
         usernameEl.value = savedUser;
+        if (savedPass) {
+          passwordEl.value = savedPass;
+        }
         remember.checked = true;
         // Tampilkan preview nama jika NIP sudah tersimpan
         setTimeout(() => showNamaPreview(savedUser), 1200);
@@ -860,11 +865,13 @@
             localStorage.setItem('spkl_script_url', APPS_SCRIPT_URL);
           }
 
-          // Remember NIP
+          // Remember NIP & Password
           if (remember.checked) {
             localStorage.setItem('spkl_login_user', user.username);
+            localStorage.setItem('spkl_login_pass', pVal); // Simpan password juga
           } else {
             localStorage.removeItem('spkl_login_user');
+            localStorage.removeItem('spkl_login_pass');
           }
 
           showToast(`Selamat datang, ${user.displayName}!`, true);

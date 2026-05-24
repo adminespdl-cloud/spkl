@@ -2429,6 +2429,16 @@ function initForm() {
         updateApprovalBadge();
 
         form.reset();
+        
+        // Isi ulang data NIP dan Nama karena ikut terhapus oleh form.reset()
+        try {
+          const auth = JSON.parse(sessionStorage.getItem('spkl_auth') || '{}');
+          document.getElementById('nama').value       = auth.displayName || '';
+          document.getElementById('noInduk').value    = auth.username || '';
+          document.getElementById('jabatan').value    = auth.jabatan || '';
+          document.getElementById('penempatan').value = auth.penempatan || '';
+        } catch (e) {}
+
         window.clearFoto1();
         window.clearFoto2();
         const totalJamSpan = document.getElementById('totalJamLembur');
@@ -2463,6 +2473,16 @@ function initForm() {
 
         showToast('SPKL Berhasil Disimpan & Dikirim!');
         form.reset();
+
+        // Isi ulang data NIP dan Nama
+        try {
+          const auth = JSON.parse(sessionStorage.getItem('spkl_auth') || '{}');
+          document.getElementById('nama').value       = auth.displayName || '';
+          document.getElementById('noInduk').value    = auth.username || '';
+          document.getElementById('jabatan').value    = auth.jabatan || '';
+          document.getElementById('penempatan').value = auth.penempatan || '';
+        } catch (e) {}
+
         window.clearFoto1();
         window.clearFoto2();
         document.querySelector('[data-target="view-dashboard"]').click();

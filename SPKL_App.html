@@ -2433,7 +2433,10 @@ function initForm() {
         window.clearFoto2();
         const totalJamSpan = document.getElementById('totalJamLembur');
         if (totalJamSpan) totalJamSpan.textContent = '0';
-        document.getElementById('main-content').scrollTo({ top: 0, behavior: 'smooth' });
+        
+        // Pindah otomatis ke halaman Persetujuan agar operator bisa melihat status SPKL yang baru diajukan
+        const approvalTab = document.querySelector('[data-target="view-approval"]');
+        if (approvalTab) approvalTab.click();
 
       } else {
         // ── tl_teknik / admin: langsung kirim ke Google Sheet ──
@@ -3215,11 +3218,11 @@ function showToast(message, isError = false) {
         const navApproval  = document.getElementById('nav-approval');
 
         if (role === 'operator') {
-          // Operator: Form tetap bisa diakses di awal, tapi tombol menu disembunyikan
+          // Operator: Cukup tampilkan Form (Input) dan Persetujuan di navigasi bawah
           if (navDashboard) navDashboard.style.display = 'none';
           if (navSettings)  navSettings.style.display  = 'none';
           if (navReport)    navReport.style.display    = 'none';
-          if (navForm)      navForm.style.display      = 'none'; // Sembunyikan menu Input SPKL
+          // navForm DIBIARKAN TAMPIL agar operator punya tombol kembali ke halaman Input SPKL
           
           // Langsung ke form input secara default
           setTimeout(() => { if (navForm) navForm.click(); }, 0);

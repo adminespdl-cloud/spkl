@@ -1924,6 +1924,22 @@ function getApprovalQueue() {
 function saveApprovalQueue(queue) {
   localStorage.setItem('spkl_approval_queue', JSON.stringify(queue));
 }
+function getEffectiveRole() {
+  try {
+    const auth = JSON.parse(sessionStorage.getItem('spkl_auth') || '{}');
+    let role = (auth.role || 'operator').toLowerCase().trim();
+    if (role === 'operator' || role === '') {
+      const jab = (auth.jabatan || '').toLowerCase();
+      if (jab.includes('koordinator')) role = 'koordinator';
+      else if (jab.includes('tl teknik') || jab.includes('team leader')) role = 'tl_teknik';
+      else if (jab.includes('admin')) role = 'admin';
+    }
+    return role;
+  } catch (e) {
+    return 'operator';
+  }
+}
+
 function getPendingCount(forRole) {
   // forRole: 'koordinator' → lihat pengajuan operator yang MENUNGGU
   //          'tl_teknik'   → lihat pengajuan koordinator yang MENUNGGU
@@ -2172,7 +2188,7 @@ function initForm() {
     console.error('Gagal autofill data karyawan:', err);
   }
 
-  // Fungsi untuk mengambil Riwayat Lembur dari Google Sheet dan menyimpannya di Cache (localStorage)
+  // Fungsi untuk mengambil Riwayat Lembur & Antrian dari Google Sheet dan menyimpannya di Cache (localStorage)
   async function fetchHistoryData() {
     const scriptUrl = localStorage.getItem('spkl_script_url');
     if (!scriptUrl) return;
@@ -2180,22 +2196,30 @@ function initForm() {
       const response = await fetch(scriptUrl + "?action=getHistory");
       const result = await response.json();
       if (result.status === "success" && Array.isArray(result.data)) {
-        // Simpan 200 data terakhir ke cache HP
+        // Simpan data history ke cache
         localStorage.setItem('spkl_history', JSON.stringify(result.data));
-        
-        // Refresh tampilan: initReport DULU agar dropdown Petugas & Tahun ikut diperbarui
-        if (typeof initReport === 'function') initReport();
-        if (typeof loadDashboard === 'function') loadDashboard();
-        if (typeof loadApprovalView === 'function') loadApprovalView();
-        if (typeof loadReport === 'function') loadReport();
       }
+
+      const responsePend = await fetch(scriptUrl + "?action=getPending");
+      const resultPend = await responsePend.json();
+      if (resultPend.status === "success" && Array.isArray(resultPend.data)) {
+        // Simpan data pending ke cache
+        localStorage.setItem('spkl_approval_queue', JSON.stringify(resultPend.data));
+      }
+        
+      // Refresh tampilan: initReport DULU agar dropdown Petugas & Tahun ikut diperbarui
+      if (typeof initReport === 'function') initReport();
+      if (typeof loadDashboard === 'function') loadDashboard();
+      if (typeof loadApprovalView === 'function') loadApprovalView();
+      if (typeof loadReport === 'function') loadReport();
+      if (typeof updateApprovalBadge === 'function') updateApprovalBadge();
     } catch (error) {
-      console.error("Gagal mengambil riwayat dari Google Sheet:", error);
+      console.error("Gagal mengambil data sinkronisasi dari Google Sheet:", error);
     }
   }
 
   // Fungsi untuk update dropdown karyawan dari Google Sheet
-  async function fetchKaryawanData() {
+  window.fetchKaryawanData = async function() {
     const scriptUrl = localStorage.getItem('spkl_script_url');
     if (!scriptUrl) return;
 
@@ -2218,13 +2242,7 @@ function initForm() {
             localStorage.setItem('spkl_history', '[]');
             changed = true;
           }
-          // Bersihkan juga antrian approval (hapus semua yg sudah DISETUJUI/DITOLAK)
-          const queue = getApprovalQueue();
-          const filtered = queue.filter(e => e.status === 'MENUNGGU');
-          if (filtered.length !== queue.length) {
-            saveApprovalQueue(filtered);
-            changed = true;
-          }
+          // Antrian disinkronisasi online, jadi tidak perlu dibersihkan secara lokal
           if (changed) {
             if (typeof loadDashboard === 'function') loadDashboard();
             if (typeof loadApprovalView === 'function') loadApprovalView();
@@ -2238,7 +2256,7 @@ function initForm() {
   }
 
   // Ambil data petugas di background
-  fetchKaryawanData();
+  window.fetchKaryawanData();
 
   // File Upload Logic 1 (Camera & Gallery)
   const fileInput_gal = document.getElementById('fotoEviden');
@@ -2411,7 +2429,7 @@ function initForm() {
     data.fotoFileName_2 = data.nama.replace(/\s+/g, '_') + '_Eviden2.jpg';
 
     const authSession = JSON.parse(sessionStorage.getItem('spkl_auth') || '{}');
-    const currentRole = authSession.role || 'operator';
+    const currentRole = getEffectiveRole();
     const currentUser = authSession.displayName || 'Unknown';
 
     // Tentukan siapa approver berdasarkan role yang submit
@@ -2450,27 +2468,35 @@ function initForm() {
         approvalEntry.submittedByRole = finalSubmittedByRole;
         approvalEntry.approverRole    = finalApproverRole;
         approvalEntry.rejectionNote   = '';
-        // Simpan URL Google Script di dalam entry agar bisa dipakai saat approve
-        // dari perangkat manapun (koordinator / TL tidak perlu isi URL sendiri)
-        approvalEntry.scriptUrl       = localStorage.getItem('spkl_script_url') || '';
 
-        // Simpan base64 foto terpisah (jika ada) agar bisa dikirim saat approve
-        if (base64Photo) {
-          localStorage.setItem('spkl_foto_' + approvalEntry.id, JSON.stringify({
-            fotoBase64: base64Photo, fotoMimeType: photoMimeType,
-            fotoBase64_2: base64Photo2, fotoMimeType_2: photoMimeType2
-          }));
+        const scriptUrl = localStorage.getItem('spkl_script_url');
+        if (!scriptUrl) {
+          showToast('Harap atur URL Google Script di Pengaturan terlebih dahulu!', true);
+          document.querySelector('[data-target="view-settings"]').click();
+          return;
         }
 
-        await new Promise(r => setTimeout(r, 600));
+        const submitPayload = { ...approvalEntry, action: 'submitPending' };
+        if (base64Photo) {
+          submitPayload.fotoBase64 = base64Photo;
+          submitPayload.fotoMimeType = photoMimeType;
+          submitPayload.fotoBase64_2 = base64Photo2;
+          submitPayload.fotoMimeType_2 = photoMimeType2;
+        }
 
-        const queue = getApprovalQueue();
-        queue.unshift(approvalEntry);
-        if (queue.length > 100) queue.pop();
-        saveApprovalQueue(queue);
+        const response = await fetch(scriptUrl, {
+          method: 'POST',
+          body: JSON.stringify(submitPayload),
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        const result = await response.json();
+        if (result.status === 'error') throw new Error(result.message);
 
         const approverLabel = finalApproverRole === 'tl_teknik' ? 'TL Teknik' : 'Koordinator';
         showToast(`✅ Pengajuan terkirim! Menunggu persetujuan ${approverLabel}`);
+
+        // Sync with server immediately
+        if (typeof window.fetchKaryawanData === 'function') await window.fetchKaryawanData();
 
         // Notifikasi suara + getar untuk approver (jika mereka sedang di halaman yang sama)
         notifyApprover();
@@ -2628,9 +2654,8 @@ async function doApprove(id) {
     return;
   }
 
-  const queue = getApprovalQueue();
-  const idx   = queue.findIndex(e => e.id === id);
-  if (idx === -1) return;
+  const scriptUrl = localStorage.getItem('spkl_script_url');
+  if (!scriptUrl) return;
 
   const btn = document.getElementById('btn-approve-' + id);
   if (btn) {
@@ -2638,101 +2663,101 @@ async function doApprove(id) {
     btn.innerHTML = '⏳ Mengirim...';
   }
 
-  const entry = { ...queue[idx] };
-  entry.status     = 'DISETUJUI';
-  entry.approvedAt = Date.now();
+  try {
+    const response = await fetch(scriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'approvePending', id: id }),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    });
+    const result = await response.json();
+    if (result.status === 'error') throw new Error(result.message);
 
-  const authSession = JSON.parse(sessionStorage.getItem('spkl_auth') || '{}');
-  entry.approvedBy  = authSession.displayName || 'Koordinator';
-
-  // Ambil foto dari storage terpisah
-  const fotoKey  = 'spkl_foto_' + id;
-  const fotoData = JSON.parse(localStorage.getItem(fotoKey) || 'null');
-
-  // Kirim ke Google Sheet dan tunggu prosesnya selesai
-  const success = await _sendToGoogleSheet(entry, fotoData);
-
-  if (!success) {
-    // Jika gagal, jangan hapus dari antrian agar bisa dicoba lagi
+    notifyResult(true);
+    showToast('✅ Pengajuan disetujui & data terkirim ke Google Sheet!');
+    
+    // Sync queue
+    if (typeof window.fetchKaryawanData === 'function') await window.fetchKaryawanData();
+  } catch (error) {
+    showToast('❌ Gagal: ' + error.message, true);
     if (btn) {
       btn.disabled = false;
       btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg> Setujui';
     }
+  }
+}
+
+async function doReject(id, reason) {
+  if (!navigator.onLine) {
+    showToast('⚠ Internet tidak terhubung!', true);
     return;
   }
+  const scriptUrl = localStorage.getItem('spkl_script_url');
+  if (!scriptUrl) return;
 
-  // ── JANGAN dihapus dari antrian agar Operator masih bisa melihat status "DISETUJUI" ──
-  // Akan dihapus otomatis setelah 24 jam oleh _cleanOldApprovalEntries()
-  queue[idx] = entry;
-  saveApprovalQueue(queue);
+  try {
+    const response = await fetch(scriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'rejectPending', id: id, rejectionNote: reason }),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    });
+    const result = await response.json();
+    if (result.status === 'error') throw new Error(result.message);
 
-  // Simpan ke history lokal
-  const historyEntry = { ...entry };
-  saveToHistory(historyEntry);
-
-  // Bersihkan foto dari storage
-  if (fotoData) localStorage.removeItem(fotoKey);
-
-  notifyResult(true);
-  showToast('✅ Pengajuan disetujui & data terkirim ke Google Sheet!');
-  updateApprovalBadge();
-  loadApprovalView();
-  loadDashboard();
-}
-
-function doReject(id, reason) {
-  const queue = getApprovalQueue();
-  const idx   = queue.findIndex(e => e.id === id);
-  if (idx === -1) return;
-
-  queue[idx].status        = 'DITOLAK';
-  queue[idx].rejectionNote = reason;
-  queue[idx].rejectedAt    = Date.now();
-
-  const authSession        = JSON.parse(sessionStorage.getItem('spkl_auth') || '{}');
-  queue[idx].rejectedBy    = authSession.displayName || 'Koordinator';
-
-  saveApprovalQueue(queue);
-
-  notifyResult(false);
-  showToast('❌ Pengajuan ditolak. Operator dapat mengajukan ulang.', true);
-  updateApprovalBadge();
-  loadApprovalView();
-  loadDashboard();
-}
-
-function doResubmit(id) {
-  // Ubah status DITOLAK → MENUNGGU kembali
-  const queue = getApprovalQueue();
-  const idx   = queue.findIndex(e => e.id === id);
-  if (idx === -1) return;
-
-  queue[idx].status        = 'MENUNGGU';
-  queue[idx].rejectionNote = '';
-  queue[idx].timestamp     = Date.now();
-  delete queue[idx].rejectedAt;
-  delete queue[idx].rejectedBy;
-
-  saveApprovalQueue(queue);
-  notifyApprover();
-  showToast('🔄 Pengajuan ulang berhasil dikirim!');
-  updateApprovalBadge();
-  loadDashboard();
-}
-
-function dismissApproval(id) {
-  const queue = getApprovalQueue();
-  const idx = queue.findIndex(e => e.id === id);
-  if (idx !== -1) {
-    queue.splice(idx, 1);
-    saveApprovalQueue(queue);
-    loadApprovalView();
+    notifyResult(false);
+    showToast('❌ Pengajuan ditolak. Operator dapat mengajukan ulang.', true);
+    
+    if (typeof window.fetchKaryawanData === 'function') await window.fetchKaryawanData();
+  } catch (error) {
+    showToast('❌ Gagal: ' + error.message, true);
   }
+}
+
+async function doResubmit(id) {
+  if (!navigator.onLine) {
+    showToast('⚠ Internet tidak terhubung!', true);
+    return;
+  }
+  const scriptUrl = localStorage.getItem('spkl_script_url');
+  if (!scriptUrl) return;
+
+  try {
+    const response = await fetch(scriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'resubmitPending', id: id }),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    });
+    const result = await response.json();
+    if (result.status === 'error') throw new Error(result.message);
+
+    notifyApprover();
+    showToast('🔄 Pengajuan ulang berhasil dikirim!');
+    
+    if (typeof window.fetchKaryawanData === 'function') await window.fetchKaryawanData();
+  } catch (error) {
+    showToast('❌ Gagal: ' + error.message, true);
+  }
+}
+
+async function dismissApproval(id) {
+  if (!navigator.onLine) return;
+  const scriptUrl = localStorage.getItem('spkl_script_url');
+  if (!scriptUrl) return;
+
+  try {
+    const response = await fetch(scriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'dismissPending', id: id }),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    });
+    const result = await response.json();
+    if (result.status !== 'error') {
+      if (typeof window.fetchKaryawanData === 'function') await window.fetchKaryawanData();
+    }
+  } catch (e) {}
 }
 
 function updateApprovalBadge() {
-  const authSession = JSON.parse(sessionStorage.getItem('spkl_auth') || '{}');
-  const role        = authSession.role || 'operator';
+  const role = getEffectiveRole();
   const navApproval = document.getElementById('nav-approval');
   if (!navApproval) return;
 
@@ -2754,7 +2779,7 @@ function updateApprovalBadge() {
 
 function loadApprovalView() {
   const authSession = JSON.parse(sessionStorage.getItem('spkl_auth') || '{}');
-  const role        = authSession.role || 'operator';
+  const role        = getEffectiveRole();
   const container   = document.getElementById('approval-entries');
   const subtitle    = document.getElementById('approval-subtitle');
   if (!container) return;
@@ -2927,7 +2952,7 @@ function clearDashboard() {
 
 function loadDashboard() {
   const authSession     = JSON.parse(sessionStorage.getItem('spkl_auth') || '{}');
-  const role            = authSession.role || 'admin';
+  const role            = getEffectiveRole();
   const history         = JSON.parse(localStorage.getItem('spkl_history') || '[]');
   const queue           = getApprovalQueue();
   const entriesContainer = document.getElementById('recent-entries');
@@ -3306,7 +3331,7 @@ function showToast(message, isError = false) {
       }
 
       const data = JSON.parse(auth);
-      const role = data.role || 'admin';
+      const role = getEffectiveRole();
 
       window.addEventListener('DOMContentLoaded', () => {
 

@@ -98,6 +98,26 @@ function doGet(e) {
       return respond({ status: 'success', data: history }, e);
     }
     
+    // Action 3: getPending
+    else if (action === 'getPending') {
+      const sheetAntrian = ss.getSheetByName('Antrian SPKL');
+      if (!sheetAntrian) return respond({ status: 'success', data: [] }, e);
+      
+      const rows = sheetAntrian.getDataRange().getValues();
+      const pending = [];
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r[0]) continue; // Skip header or empty
+        try {
+          const payload = JSON.parse(r[6] || '{}');
+          payload.status = r[2] || payload.status;
+          payload.rejectionNote = r[5] || payload.rejectionNote;
+          pending.unshift(payload);
+        } catch(err) { }
+      }
+      return respond({ status: 'success', data: pending }, e);
+    }
+    
     else {
       return respond({ error: 'Action tidak dikenali' }, e);
     }
@@ -108,29 +128,24 @@ function doGet(e) {
 }
 
 
-// ── POST: Simpan Data SPKL ke Rekap Lembur ───────────────────────────
+// ── POST: Simpan Data SPKL ke Rekap Lembur / Antrian ───────────────────────────
 function doPost(e) {
   try {
-    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_DATA_SPKL);
-    if (!sheet) throw new Error("Sheet '" + SHEET_DATA_SPKL + "' tidak ditemukan!");
-
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const data = JSON.parse(e.postData.contents);
-    
+    const action = data.action || 'directSubmit';
+
     // Fungsi pembantu untuk memproses foto base64
     function processPhoto(b64Data, mimeType, fileName) {
       if (!b64Data) return "";
       try {
         let cleanBase64 = b64Data;
-        // Jika mengandung "base64,", ambil string sesudahnya
         if (cleanBase64.indexOf('base64,') !== -1) {
           cleanBase64 = cleanBase64.split('base64,')[1];
         } else if (cleanBase64.indexOf('data:') === 0) {
-          // Jika masih mengandung header data URI utuh
           const commaIdx = cleanBase64.indexOf(',');
           if (commaIdx !== -1) cleanBase64 = cleanBase64.substring(commaIdx + 1);
         }
-        
-        // Buat file jika cleanBase64 memiliki panjang yang masuk akal
         if (cleanBase64 && cleanBase64.length > 100) {
           const bytes = Utilities.base64Decode(cleanBase64);
           const blob = Utilities.newBlob(bytes, mimeType || "image/jpeg", fileName || "Eviden.jpg");
@@ -144,42 +159,170 @@ function doPost(e) {
       return "Data foto tidak valid";
     }
 
-    const fotoUrl1 = processPhoto(data.fotoBase64, data.fotoMimeType, data.fotoFileName || "Eviden1.jpg");
-    const fotoUrl2 = processPhoto(data.fotoBase64_2, data.fotoMimeType_2, data.fotoFileName_2 || "Eviden2.jpg");
+    if (action === 'submitPending') {
+      let sheetAntrian = ss.getSheetByName('Antrian SPKL');
+      if (!sheetAntrian) {
+        sheetAntrian = ss.insertSheet('Antrian SPKL');
+        sheetAntrian.appendRow(['ID', 'TIMESTAMP', 'STATUS', 'SUBMITTED_ROLE', 'APPROVER_ROLE', 'REJECT_NOTE', 'PAYLOAD']);
+      }
+      
+      const fotoUrl1 = processPhoto(data.fotoBase64, data.fotoMimeType, data.fotoFileName || "Eviden1.jpg");
+      const fotoUrl2 = processPhoto(data.fotoBase64_2, data.fotoMimeType_2, data.fotoFileName_2 || "Eviden2.jpg");
+      
+      data.fotoUrl1 = fotoUrl1;
+      data.fotoUrl2 = fotoUrl2;
+      delete data.fotoBase64;
+      delete data.fotoBase64_2;
+      delete data.fotoMimeType;
+      delete data.fotoMimeType_2;
 
-    // Susunan kolom sesuai permintaan:
-    // NO INDUK | NAMA | JABATAN | PENEMPATAN | KATEGORI | KETERANGAN LEMBUR | UPAH | TGL LEMBUR | SHIFT | JAM KERJA | WAKTU LEMBUR/KJK | Jml JAM | KETERANGAN | EVIDEN FOTO 1 | EVIDEN FOTO 2 | MINGGU KE | TIMESTAMP
-    const rowData = [
-      data.noInduk || "",
-      data.nama || "",
-      data.jabatan || "",
-      data.penempatan || "",
-      data.kategori || "",
-      data.keteranganLembur || "",
-      "",                             // UPAH (Dikosongkan / belum ada perhitungan di form)
-      data.tglLembur || "",
-      data.shift || "",
-      data.jamKerja || "",            // JAM KERJA (dari dropdown: 08.00-16.00, dll)
-      data.waktuLembur || "",         // WAKTU LEMBUR / KJK (contoh: 08:00 - 13:00)
-      data.jmlJam || "",              // Jml JAM (contoh: 5)
-      data.keteranganTambahan || data.keterangan || "", 
-      fotoUrl1 || "",                       // EVIDEN FOTO 1 (Link Google Drive)
-      fotoUrl2 || "",                       // EVIDEN FOTO 2 (Link Google Drive)
-      data.mingguKe || "",
-      Utilities.formatDate(new Date(), "Asia/Jakarta", "dd/MM/yyyy HH:mm:ss") // TIMESTAMP
-    ];
+      sheetAntrian.appendRow([
+        data.id,
+        new Date().toISOString(),
+        'MENUNGGU',
+        data.submittedByRole,
+        data.approverRole,
+        '',
+        JSON.stringify(data)
+      ]);
+      SpreadsheetApp.flush();
+      return respond({ status: "success", message: "Disimpan di antrian" });
+    }
+    else if (action === 'approvePending') {
+      const sheetAntrian = ss.getSheetByName('Antrian SPKL');
+      const sheetData = ss.getSheetByName(SHEET_DATA_SPKL);
+      if (!sheetAntrian || !sheetData) throw new Error("Sheet tidak ditemukan");
+      
+      const rows = sheetAntrian.getDataRange().getValues();
+      let foundRowIndex = -1;
+      let payloadData = null;
+      for (let i = 1; i < rows.length; i++) {
+        if (rows[i][0] === data.id) {
+           foundRowIndex = i + 1;
+           try { payloadData = JSON.parse(rows[i][6]); } catch(e) {}
+           break;
+        }
+      }
+      
+      if (foundRowIndex > 0 && payloadData) {
+        const rowData = [
+          payloadData.noInduk || "",
+          payloadData.nama || "",
+          payloadData.jabatan || "",
+          payloadData.penempatan || "",
+          payloadData.kategori || "",
+          payloadData.keteranganLembur || "",
+          "",
+          payloadData.tglLembur || "",
+          payloadData.shift || "",
+          payloadData.jamKerja || "",
+          payloadData.waktuLembur || "",
+          payloadData.jmlJam || "",
+          payloadData.keteranganTambahan || payloadData.keterangan || "", 
+          payloadData.fotoUrl1 || "",
+          payloadData.fotoUrl2 || "",
+          payloadData.mingguKe || "",
+          Utilities.formatDate(new Date(), "Asia/Jakarta", "dd/MM/yyyy HH:mm:ss")
+        ];
+        sheetData.appendRow(rowData);
+        sheetAntrian.deleteRow(foundRowIndex);
+        SpreadsheetApp.flush();
+        return respond({ status: "success", message: "SPKL Disetujui" });
+      } else {
+        throw new Error("Data antrian tidak ditemukan");
+      }
+    }
+    else if (action === 'rejectPending') {
+      const sheetAntrian = ss.getSheetByName('Antrian SPKL');
+      if (!sheetAntrian) throw new Error("Sheet tidak ditemukan");
+      const rows = sheetAntrian.getDataRange().getValues();
+      for (let i = 1; i < rows.length; i++) {
+        if (rows[i][0] === data.id) {
+           sheetAntrian.getRange(i + 1, 3).setValue('DITOLAK');
+           sheetAntrian.getRange(i + 1, 6).setValue(data.rejectionNote || '');
+           SpreadsheetApp.flush();
+           return respond({ status: "success", message: "SPKL Ditolak" });
+        }
+      }
+      throw new Error("Data antrian tidak ditemukan");
+    }
+    else if (action === 'resubmitPending') {
+      const sheetAntrian = ss.getSheetByName('Antrian SPKL');
+      if (!sheetAntrian) throw new Error("Sheet tidak ditemukan");
+      const rows = sheetAntrian.getDataRange().getValues();
+      for (let i = 1; i < rows.length; i++) {
+        if (rows[i][0] === data.id) {
+           sheetAntrian.getRange(i + 1, 3).setValue('MENUNGGU');
+           sheetAntrian.getRange(i + 1, 6).setValue('');
+           
+           const fotoUrl1 = processPhoto(data.fotoBase64, data.fotoMimeType, data.fotoFileName || "Eviden1.jpg");
+           const fotoUrl2 = processPhoto(data.fotoBase64_2, data.fotoMimeType_2, data.fotoFileName_2 || "Eviden2.jpg");
+           if (fotoUrl1) data.fotoUrl1 = fotoUrl1;
+           if (fotoUrl2) data.fotoUrl2 = fotoUrl2;
+           delete data.fotoBase64; delete data.fotoBase64_2; delete data.fotoMimeType; delete data.fotoMimeType_2;
+           
+           let oldPayload = {};
+           try { oldPayload = JSON.parse(rows[i][6]); } catch(e) {}
+           const newPayload = { ...oldPayload, ...data, id: oldPayload.id };
+           sheetAntrian.getRange(i + 1, 7).setValue(JSON.stringify(newPayload));
+           
+           SpreadsheetApp.flush();
+           return respond({ status: "success", message: "Diajukan ulang" });
+        }
+      }
+      throw new Error("Data antrian tidak ditemukan");
+    }
+    else if (action === 'dismissPending') {
+      const sheetAntrian = ss.getSheetByName('Antrian SPKL');
+      if (!sheetAntrian) throw new Error("Sheet tidak ditemukan");
+      const rows = sheetAntrian.getDataRange().getValues();
+      for (let i = 1; i < rows.length; i++) {
+        if (rows[i][0] === data.id) {
+           sheetAntrian.deleteRow(i + 1);
+           SpreadsheetApp.flush();
+           return respond({ status: "success", message: "Dihapus" });
+        }
+      }
+      throw new Error("Data antrian tidak ditemukan");
+    }
+    else {
+      // Direct Submit (legacy code)
+      const sheet = ss.getSheetByName(SHEET_DATA_SPKL);
+      if (!sheet) throw new Error("Sheet '" + SHEET_DATA_SPKL + "' tidak ditemukan!");
+      
+      const fotoUrl1 = processPhoto(data.fotoBase64, data.fotoMimeType, data.fotoFileName || "Eviden1.jpg");
+      const fotoUrl2 = processPhoto(data.fotoBase64_2, data.fotoMimeType_2, data.fotoFileName_2 || "Eviden2.jpg");
 
-    sheet.appendRow(rowData);
-    SpreadsheetApp.flush(); // Memaksa script menulis data ke sheet detik ini juga
+      const rowData = [
+        data.noInduk || "",
+        data.nama || "",
+        data.jabatan || "",
+        data.penempatan || "",
+        data.kategori || "",
+        data.keteranganLembur || "",
+        "",
+        data.tglLembur || "",
+        data.shift || "",
+        data.jamKerja || "",
+        data.waktuLembur || "",
+        data.jmlJam || "",
+        data.keteranganTambahan || data.keterangan || "", 
+        fotoUrl1 || "",
+        fotoUrl2 || "",
+        data.mingguKe || "",
+        Utilities.formatDate(new Date(), "Asia/Jakarta", "dd/MM/yyyy HH:mm:ss")
+      ];
 
-    const insertedRow = sheet.getLastRow();
+      sheet.appendRow(rowData);
+      SpreadsheetApp.flush();
 
-    return respond({ 
-      status: "success", 
-      message: "Data berhasil disimpan",
-      insertedAtRow: insertedRow,
-      sheetName: sheet.getName()
-    });
+      return respond({ 
+        status: "success", 
+        message: "Data berhasil disimpan",
+        insertedAtRow: sheet.getLastRow(),
+        sheetName: sheet.getName()
+      });
+    }
   } catch (error) {
     return respond({ status: "error", message: error.message });
   }

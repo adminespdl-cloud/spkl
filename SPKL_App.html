@@ -1930,7 +1930,7 @@ function getEffectiveRole() {
     let role = (auth.role || 'operator').toLowerCase().trim();
     if (role === 'operator' || role === '') {
       const jab = (auth.jabatan || '').toLowerCase();
-      if (jab.includes('koordinator')) role = 'koordinator';
+      if (jab.includes('koordinator') || jab.includes('kodir')) role = 'koordinator';
       else if (jab.includes('tl teknik') || jab.includes('team leader')) role = 'tl_teknik';
       else if (jab.includes('admin')) role = 'admin';
     }
@@ -2183,6 +2183,21 @@ function initForm() {
       if(noIndukInput) noIndukInput.value = data.username || '';
       if(jabatanInput) jabatanInput.value = data.jabatan || '';
       if(penempatanInput) penempatanInput.value = data.penempatan || '';
+      
+      // Update label tombol submit sesuai role
+      setTimeout(() => {
+        const btnLabel = document.getElementById('btn-submit-label') || btnText;
+        if (btnLabel) {
+          const role = getEffectiveRole();
+          if (role === 'operator') {
+            btnLabel.innerHTML = 'Kirim SPKL <span style="font-size:0.75rem;opacity:0.8;display:block;margin-top:-2px;">(ke Koordinator)</span>';
+          } else if (role === 'koordinator') {
+            btnLabel.innerHTML = 'Kirim SPKL <span style="font-size:0.75rem;opacity:0.8;display:block;margin-top:-2px;">(ke TL Teknik)</span>';
+          } else {
+            btnLabel.innerHTML = 'Simpan SPKL <span style="font-size:0.75rem;opacity:0.8;display:block;margin-top:-2px;">(Langsung)</span>';
+          }
+        }
+      }, 100);
     }
   } catch (err) {
     console.error('Gagal autofill data karyawan:', err);
@@ -2449,8 +2464,9 @@ function initForm() {
         const approvalEntry = { ...data };
         delete approvalEntry.fotoBase64;
         delete approvalEntry.fotoBase64_2;
-        // Cek apakah user yang submit memiliki jabatan "Koordinator"
-        const isJabatanKoordinator = (data.jabatan || '').toLowerCase().includes('koordinator');
+        // Cek apakah user yang submit memiliki jabatan "Koordinator" atau "Kodir"
+        const jab_submit = (data.jabatan || '').toLowerCase();
+        const isJabatanKoordinator = jab_submit.includes('koordinator') || jab_submit.includes('kodir');
         
         let finalSubmittedByRole = currentRole;
         let finalApproverRole    = currentRole === 'operator' ? 'koordinator' : 'tl_teknik';
@@ -3376,13 +3392,11 @@ function showToast(message, isError = false) {
           setTimeout(() => { if (navForm) navForm.click(); }, 0);
 
         } else if (role === 'koordinator') {
-          // Koordinator: sembunyikan Input SPKL dan Pengaturan
-          if (navForm) navForm.style.display = 'none';
+          // Koordinator: sembunyikan Pengaturan
           if (navSettings) navSettings.style.display = 'none';
 
         } else if (role === 'tl_teknik') {
-          // TL Teknik: sembunyikan Input SPKL dan Pengaturan
-          if (navForm) navForm.style.display = 'none';
+          // TL Teknik: sembunyikan Pengaturan
           if (navSettings) navSettings.style.display = 'none';
 
         }

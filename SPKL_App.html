@@ -1183,6 +1183,28 @@ select {
   color: #94a3b8 !important;
   opacity: 1 !important;
 }
+/* Native select styling untuk filter laporan (tidak pakai Choices.js) */
+#filter-petugas, #filter-tahun {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1.5px solid #cbd5e1;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  appearance: auto;
+  -webkit-appearance: auto;
+  transition: border-color 0.2s;
+}
+#filter-petugas:hover, #filter-tahun:hover,
+#filter-petugas:focus, #filter-tahun:focus {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2,132,199,0.1);
+}
 
 /* Native Time Input - Modern Style */
 input[type="time"] {
@@ -1503,19 +1525,24 @@ input[type="time"]:focus {
         <!-- REPORT VIEW -->
         <section id="view-report" class="view">
           <div class="glass-card">
-            <h2>Laporan Lembur</h2>
+            <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+              <h2 style="margin:0">Laporan Lembur</h2>
+              <button id="btn-refresh-report" onclick="refreshReport()" style="display:flex;align-items:center;gap:6px;background:rgba(2,132,199,0.1);border:1px solid rgba(2,132,199,0.3);color:var(--primary);border-radius:10px;padding:8px 14px;font-size:0.8rem;font-weight:600;cursor:pointer;">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                Refresh Data
+              </button>
+            </div>
             <div class="form-row" style="margin-top: 16px;">
               <div class="form-group half">
                 <label for="filter-petugas">Petugas</label>
                 <select id="filter-petugas">
                   <option value="ALL">All Petugas</option>
-                  <!-- Diisi otomatis -->
                 </select>
               </div>
               <div class="form-group half">
                 <label for="filter-tahun">Tahun</label>
                 <select id="filter-tahun">
-                  <!-- Diisi otomatis dengan tahun sekarang -->
+                  <!-- Diisi otomatis dari data cache -->
                 </select>
               </div>
             </div>
@@ -1942,6 +1969,7 @@ function initNavigation() {
       if(targetId === 'view-dashboard') {
         loadDashboard();
       } else if (targetId === 'view-report') {
+        initReport();   // Bangun ulang dropdown Petugas & Tahun dari cache terbaru
         loadReport();
       } else if (targetId === 'view-approval') {
         loadApprovalView();
@@ -2155,7 +2183,8 @@ function initForm() {
         // Simpan 200 data terakhir ke cache HP
         localStorage.setItem('spkl_history', JSON.stringify(result.data));
         
-        // Refresh tampilan jika sedang dibuka
+        // Refresh tampilan: initReport DULU agar dropdown Petugas & Tahun ikut diperbarui
+        if (typeof initReport === 'function') initReport();
         if (typeof loadDashboard === 'function') loadDashboard();
         if (typeof loadApprovalView === 'function') loadApprovalView();
         if (typeof loadReport === 'function') loadReport();
@@ -3018,49 +3047,79 @@ function loadDashboard() {
   totalEntriesEl.textContent = monthEntries;
 }
 
+function refreshReport() {
+  // Ambil ulang data dari server, lalu perbarui filter dan laporan
+  const scriptUrl = localStorage.getItem('spkl_script_url');
+  if (!scriptUrl) { initReport(); loadReport(); return; }
+  
+  const btn = document.getElementById('btn-refresh-report');
+  if (btn) btn.disabled = true;
+
+  fetch(scriptUrl + '?action=getHistory')
+    .then(r => r.json())
+    .then(result => {
+      if (result.status === 'success' && Array.isArray(result.data)) {
+        localStorage.setItem('spkl_history', JSON.stringify(result.data));
+      }
+    })
+    .catch(() => {})
+    .finally(() => {
+      initReport();
+      loadReport();
+      if (btn) btn.disabled = false;
+    });
+}
+
 function initReport() {
   const selectPetugas = document.getElementById('filter-petugas');
-  const selectTahun = document.getElementById('filter-tahun');
-  
-  if(!selectPetugas || !selectTahun) return;
+  const selectTahun   = document.getElementById('filter-tahun');
+  if (!selectPetugas || !selectTahun) return;
 
-  // Bersihkan opsi lama (agar tidak duplicate saat dipanggil ulang)
+  const history = JSON.parse(localStorage.getItem('spkl_history') || '[]');
+
+  // ── Dropdown Petugas ──
+  // Gabungkan dari karyawanData (master) + nama yang ada di riwayat (agar tidak ada yang terlewat)
+  const namaSet = new Set();
+  karyawanData.forEach(k => { if (k.nama) namaSet.add(k.nama.trim()); });
+  history.forEach(e => { if (e.nama) namaSet.add(e.nama.trim()); });
+
+  const currentPetugas = selectPetugas.value;
   selectPetugas.innerHTML = '<option value="ALL">All Petugas</option>';
-  selectTahun.innerHTML = '';
-
-  // Isi dropdown petugas
-  karyawanData.forEach(k => {
+  const sortedNama = Array.from(namaSet).sort();
+  sortedNama.forEach(nama => {
     const opt = document.createElement('option');
-    opt.value = k.nama;
-    opt.textContent = k.nama;
+    opt.value = nama;
+    opt.textContent = nama;
     selectPetugas.appendChild(opt);
   });
+  // Pertahankan pilihan sebelumnya jika masih ada
+  if (currentPetugas && namaSet.has(currentPetugas)) selectPetugas.value = currentPetugas;
 
-  // Baca history untuk mendapatkan tahun-tahun yang ada
-  const history = JSON.parse(localStorage.getItem('spkl_history') || '[]');
+  // ── Dropdown Tahun ──
+  // Baca tahun yang benar-benar ada di dalam data cache
   const years = new Set();
   history.forEach(entry => {
     if (entry.tglLembur) {
-      const entryYear = new Date(entry.tglLembur).getFullYear();
-      if (!isNaN(entryYear)) years.add(entryYear);
+      const y = new Date(entry.tglLembur).getFullYear();
+      if (!isNaN(y)) years.add(y);
     }
   });
-
-  // Selalu masukkan tahun saat ini
+  // Selalu sertakan tahun ini sebagai fallback
   const currentYear = new Date().getFullYear();
   years.add(currentYear);
 
-  // Urutkan tahun dan masukkan ke dropdown
-  const sortedYears = Array.from(years).sort((a, b) => b - a);
-  sortedYears.forEach(y => {
-    const optYear = document.createElement('option');
-    optYear.value = y.toString();
-    optYear.textContent = y.toString();
-    selectTahun.appendChild(optYear);
+  const currentTahun = selectTahun.value;
+  selectTahun.innerHTML = '';
+  Array.from(years).sort((a, b) => b - a).forEach(y => {
+    const opt = document.createElement('option');
+    opt.value = y.toString();
+    opt.textContent = y.toString();
+    selectTahun.appendChild(opt);
   });
-  selectTahun.value = currentYear;
+  // Pertahankan pilihan sebelumnya jika masih ada, jika tidak pakai tahun ini
+  selectTahun.value = (currentTahun && years.has(parseInt(currentTahun))) ? currentTahun : currentYear;
 
-  // Listener untuk auto-filter (pasang sekali saja)
+  // ── Event Listener (pasang sekali saja) ──
   if (!selectPetugas.hasAttribute('data-init')) {
     selectPetugas.addEventListener('change', loadReport);
     selectTahun.addEventListener('change', loadReport);
@@ -3208,6 +3267,8 @@ function showToast(message, isError = false) {
     if (typeof Choices !== 'undefined') {
       const selects = document.querySelectorAll('select');
       selects.forEach(select => {
+        // Lewati filter-petugas & filter-tahun — diisi dinamis dari cache, tidak boleh di-wrap Choices.js
+        if (select.id === 'filter-petugas' || select.id === 'filter-tahun') return;
         if (!select.dataset.choicesInit) {
           new Choices(select, {
             searchEnabled: false,

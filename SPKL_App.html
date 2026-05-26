@@ -548,13 +548,13 @@ select {
 .table-responsive {
   width: 100%;
   overflow-x: auto;
-  border-radius: 16px;
-  border: 1px solid rgba(2, 132, 199, 0.12);
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  margin-top: 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(2, 132, 199, 0.15);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.06), 0 2px 8px rgba(2,132,199,0.06), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  margin-top: 12px;
 }
 
 .table-responsive::-webkit-scrollbar {
@@ -574,48 +574,49 @@ select {
 
 .report-table {
   width: 100%;
-  min-width: 680px;
+  min-width: 1050px;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   text-align: left;
 }
 
 .report-table th {
-  background: rgba(2, 132, 199, 0.04);
-  color: var(--text-main);
-  font-weight: 600;
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.07) 0%, rgba(13, 148, 136, 0.05) 100%);
+  color: #0f172a;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
-  font-size: 0.72rem;
-  padding: 14px 18px;
-  border-bottom: 1px solid rgba(2, 132, 199, 0.1);
+  letter-spacing: 0.9px;
+  font-size: 0.7rem;
+  padding: 10px 12px;
+  border-bottom: 2px solid rgba(2, 132, 199, 0.13);
   position: sticky;
   top: 0;
   z-index: 10;
+  white-space: nowrap;
 }
 
 .report-table th:first-child {
-  border-top-left-radius: 16px;
+  border-top-left-radius: 20px;
 }
 .report-table th:last-child {
-  border-top-right-radius: 16px;
+  border-top-right-radius: 20px;
 }
 
 .report-table tr:last-child td:first-child {
-  border-bottom-left-radius: 16px;
+  border-bottom-left-radius: 20px;
 }
 .report-table tr:last-child td:last-child {
-  border-bottom-right-radius: 16px;
+  border-bottom-right-radius: 20px;
 }
 .report-table tr:last-child td {
   border-bottom: none;
 }
 
 .report-table td {
-  padding: 14px 18px;
+  padding: 8px 12px;
   color: var(--text-main);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  border-bottom: 1px solid rgba(2, 132, 199, 0.05);
   vertical-align: middle;
   transition: all 0.2s ease;
 }
@@ -624,12 +625,90 @@ select {
   transition: all 0.2s ease;
 }
 
+.report-table tbody tr:nth-child(even) {
+  background: rgba(2, 132, 199, 0.02);
+}
+
 .report-table tbody tr:hover {
-  background: rgba(2, 132, 199, 0.03);
+  background: rgba(2, 132, 199, 0.06);
+  transform: scale(1.002);
+  box-shadow: 0 2px 12px rgba(2,132,199,0.08);
 }
 
 .report-table tbody tr:hover td {
-  color: var(--primary-dark);
+  color: #0c4a6e;
+}
+
+/* Keterangan Lembur - tidak ditumpuk, melebar horizontal */
+.report-table td.keterangan-cell {
+  white-space: nowrap;
+  min-width: 220px;
+  max-width: 340px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+/* Foto Eviden Cell */
+.foto-cell {
+  text-align: center;
+}
+.foto-thumb {
+  width: 36px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid rgba(2,132,199,0.2);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  display: inline-block;
+  margin: 2px;
+}
+.foto-thumb:hover {
+  transform: scale(2.8);
+  z-index: 99;
+  position: relative;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.25);
+  border-color: #0284c7;
+}
+.foto-none {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+
+/* Koordinator Approval Badge */
+.badge-approved {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.08));
+  color: #059669;
+  border: 1px solid rgba(16,185,129,0.3);
+  white-space: nowrap;
+}
+.badge-pending-approval {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: rgba(245,158,11,0.09);
+  color: #b45309;
+  border: 1px solid rgba(245,158,11,0.25);
+  white-space: nowrap;
 }
 
 .badge-table {
@@ -699,20 +778,22 @@ select {
 .hours-highlight {
   font-size: 0.88rem;
   font-weight: 700;
-  color: var(--primary-dark);
+  color: #0c4a6e;
   font-variant-numeric: tabular-nums;
-  background: rgba(2, 132, 199, 0.06);
-  padding: 4px 10px;
-  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(2,132,199,0.1), rgba(13,148,136,0.06));
+  padding: 5px 11px;
+  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  border: 1px solid rgba(2,132,199,0.15);
+  white-space: nowrap;
 }
 
 .hours-label {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 500;
-  color: var(--text-muted);
+  color: #64748b;
 }
 
 .date-cell {
@@ -720,7 +801,19 @@ select {
   align-items: center;
   gap: 6px;
   font-variant-numeric: tabular-nums;
-  font-weight: 500;
+  font-weight: 600;
+  white-space: nowrap;
+  color: #0f172a;
+}
+
+/* No row number column styling */
+.row-num-cell {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-align: center;
+  width: 36px;
+  min-width: 36px;
 }
 
 /* ── Approval Status Badges ─────────────────────────── */
@@ -2191,8 +2284,6 @@ function initForm() {
           const role = getEffectiveRole();
           if (role === 'operator') {
             btnLabel.innerHTML = 'Kirim SPKL <span style="font-size:0.75rem;opacity:0.8;display:block;margin-top:-2px;">(ke Koordinator)</span>';
-          } else if (role === 'koordinator') {
-            btnLabel.innerHTML = 'Kirim SPKL <span style="font-size:0.75rem;opacity:0.8;display:block;margin-top:-2px;">(ke TL Teknik)</span>';
           } else {
             btnLabel.innerHTML = 'Simpan SPKL <span style="font-size:0.75rem;opacity:0.8;display:block;margin-top:-2px;">(Langsung)</span>';
           }
@@ -2448,10 +2539,9 @@ function initForm() {
     const currentUser = authSession.displayName || 'Unknown';
 
     // Tentukan siapa approver berdasarkan role yang submit
-    // operator  → butuh persetujuan koordinator
-    // koordinator → butuh persetujuan tl_teknik
-    // tl_teknik / admin → langsung kirim ke Google Sheet
-    const needsApproval = (currentRole === 'operator' || currentRole === 'koordinator');
+    // operator  -> butuh persetujuan koordinator
+    // koordinator / tl_teknik / admin -> langsung kirim ke Google Sheet
+    const needsApproval = (currentRole === 'operator');
 
     const submitLabel = document.getElementById('btn-submit-label');
     submitLabel.classList.add('hidden');
@@ -2959,11 +3049,21 @@ function saveToHistory(data) {
 }
 
 function clearDashboard() {
-  showCustomConfirm('Yakin ingin mengosongkan semua data riwayat lembur di perangkat ini?', () => {
-    localStorage.removeItem('spkl_history');
-    loadDashboard();
-    showToast('Dashboard berhasil dikosongkan!');
-  });
+  if (window.showCustomConfirm) {
+    window.showCustomConfirm('Yakin ingin menyembunyikan riwayat lembur dari Dashboard?', () => {
+      const history = JSON.parse(localStorage.getItem('spkl_history') || '[]');
+      const hiddenSigs = JSON.parse(localStorage.getItem('spkl_dashboard_hidden') || '[]');
+      
+      history.forEach(e => {
+        const sig = (e.noInduk||'') + '_' + (e.tglLembur||'') + '_' + (e.kategori||'') + '_' + (e.shift||'');
+        if (!hiddenSigs.includes(sig)) hiddenSigs.push(sig);
+      });
+      
+      localStorage.setItem('spkl_dashboard_hidden', JSON.stringify(hiddenSigs));
+      loadDashboard();
+      showToast('Dashboard berhasil dikosongkan!');
+    });
+  }
 }
 
 function loadDashboard() {
@@ -3039,8 +3139,12 @@ function loadDashboard() {
   let historyHTML = '';
   const currentMonth = new Date().getMonth();
   let monthEntries = 0;
+  const hiddenSigs = JSON.parse(localStorage.getItem('spkl_dashboard_hidden') || '[]');
 
   history.forEach(entry => {
+    const sig = (entry.noInduk||'') + '_' + (entry.tglLembur||'') + '_' + (entry.kategori||'') + '_' + (entry.shift||'');
+    if (hiddenSigs.includes(sig)) return; // Sembunyikan jika sudah dikosongkan dari dashboard
+
     const entryDate = new Date(entry.tglLembur);
     if(entryDate.getMonth() === currentMonth) {
       monthEntries++;
@@ -3077,9 +3181,8 @@ function loadDashboard() {
   }
 
   // Tampilkan pending banner di atas recent-list jika ada
+  document.querySelectorAll('.pending-banner').forEach(el => el.remove());
   const recentListEl = entriesContainer.closest('.recent-list') || entriesContainer.parentElement;
-  const existingBanner = recentListEl ? recentListEl.querySelector('.pending-banner') : null;
-  if (existingBanner) existingBanner.remove();
   if (pendingBannerHTML && recentListEl) {
     recentListEl.insertAdjacentHTML('beforebegin', pendingBannerHTML);
   }
@@ -3199,17 +3302,25 @@ function loadReport() {
       <table class="report-table">
         <thead>
           <tr>
+            <th style="text-align:center;width:40px;">#</th>
             <th>Tanggal</th>
             <th>Nama Petugas</th>
             <th>Kategori</th>
-            <th>Keterangan Lembur</th>
+            <th style="min-width:220px;">Keterangan Lembur</th>
             <th>Shift</th>
-            <th>Waktu / Jam</th>
+            <th>Waktu Kerja</th>
+            <th style="text-align:center;">Jam</th>
+            <th style="text-align:center;">Foto Eviden</th>
+            <th style="text-align:center;">Disetujui Koordinator</th>
+            <th style="text-align:center;">Disetujui TL Teknik</th>
           </tr>
         </thead>
         <tbody>
   `;
   let count = 0;
+
+  // Pastikan data diurutkan berdasarkan tanggal terbaru ke terlama
+  history.sort((a, b) => new Date(b.tglLembur) - new Date(a.tglLembur));
 
   history.forEach(entry => {
     const entryDate = new Date(entry.tglLembur);
@@ -3234,30 +3345,86 @@ function loadReport() {
     } else if (entry.kategori === 'KJK') {
       badgeClass += ' badge-kjk';
     }
+
+    // Foto Eviden — tampilkan 1 saja (foto pertama yang tersedia)
+    let fotoHTML = '';
+    const foto1 = entry.fotoUrl1 || entry.fotoBase64 || '';
+    const foto2 = entry.fotoUrl2 || entry.fotoBase64_2 || '';
+    const fotoUtama = foto1 || foto2; // Ambil foto1, kalau kosong pakai foto2
+    
+    if (fotoUtama && fotoUtama.startsWith('http')) {
+      let imgSrc = fotoUtama;
+      // Konversi link Google Drive (viewer) menjadi direct link agar bisa tampil di tag <img>
+      const driveMatch = fotoUtama.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+      if (driveMatch && driveMatch[1]) {
+        imgSrc = `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w200`;
+      }
+      
+      fotoHTML = `<a href="${fotoUtama}" target="_blank" title="Klik untuk lihat foto eviden" style="display:inline-block">
+        <img src="${imgSrc}" class="foto-thumb" onerror="this.onerror=null; this.src='https://placehold.co/48x44/f8fafc/94a3b8?text=Error'; this.style.borderColor='#ef4444';" />
+      </a>`;
+    } else if (fotoUtama && fotoUtama.indexOf('base64') !== -1) {
+      fotoHTML = `<img src="${fotoUtama}" class="foto-thumb" title="Foto Eviden" />`;
+    } else {
+      fotoHTML = `<span class="foto-none"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Tidak Ada</span>`;
+    }
+
+    // Status Persetujuan Koordinator & TL Teknik
+    const isApproved = entry.status === 'DISETUJUI';
+    let approvalKoordHTML = '';
+    let approvalTlHTML = '';
+    
+    if (isApproved) {
+      // Karena data sudah masuk ke sheet riwayat, artinya sudah final & disetujui
+      approvalKoordHTML = `<div class="badge-approved">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Disetujui
+      </div>`;
+      
+      // Jika yang lembur adalah Koordinator itu sendiri, maka Koordinator = N/A
+      const jabatanUpperCase = (entry.jabatan || '').toUpperCase();
+      if (jabatanUpperCase.includes('KOORDINATOR') || jabatanUpperCase.includes('KODIR')) {
+         approvalKoordHTML = `<span style="font-size:0.7rem;color:#94a3b8;font-weight:600;">-</span>`;
+      }
+      
+      approvalTlHTML = `<div class="badge-approved">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Disetujui
+      </div>`;
+    } else {
+      approvalKoordHTML = `<span class="badge-pending-approval">
+        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Menunggu
+      </span>`;
+      approvalTlHTML = `<span class="badge-pending-approval">
+        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Menunggu
+      </span>`;
+    }
     
     html += `
           <tr>
-            <td style="white-space: nowrap;">
+            <td class="row-num-cell">${count}</td>
+            <td>
               <div class="date-cell">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.5;">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                  <line x1="16" y1="2" x2="16" y2="6"></line>
-                  <line x1="8" y1="2" x2="8" y2="6"></line>
-                  <line x1="3" y1="10" x2="21" y2="10"></line>
-                </svg>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#0284c7" stroke-width="2" style="opacity:0.7;flex-shrink:0;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                 <span>${dateStr}</span>
               </div>
             </td>
-            <td class="fw-bold" style="white-space: nowrap;">${entry.nama}</td>
+            <td style="white-space:nowrap;font-weight:600;color:#0f172a;">${entry.nama}</td>
             <td><span class="${badgeClass}">${entry.kategori}</span></td>
-            <td style="max-width: 240px; word-break: break-word;">${entry.keteranganLembur}</td>
-            <td style="white-space: nowrap;">${entry.shift}</td>
-            <td style="white-space: nowrap;">
+            <td class="keterangan-cell" title="${(entry.keteranganLembur||'').replace(/"/g,'&quot;')}">${entry.keteranganLembur || '-'}</td>
+            <td style="white-space:nowrap;font-size:0.8rem;color:#475569;">${entry.shift || '-'}</td>
+            <td style="white-space:nowrap;font-size:0.8rem;color:#475569;">${entry.waktuLembur || '-'}</td>
+            <td style="text-align:center;">
               <span class="hours-highlight">
-                ${entry.jmlJam || entry.waktuLembur}
+                ${entry.jmlJam || '0'}
                 <span class="hours-label">Jam</span>
               </span>
             </td>
+            <td class="foto-cell">${fotoHTML}</td>
+            <td style="text-align:center;">${approvalKoordHTML}</td>
+            <td style="text-align:center;">${approvalTlHTML}</td>
           </tr>
     `;
   });
@@ -3282,7 +3449,8 @@ function loadReport() {
     reportContainer.innerHTML = html;
   }
   
-  totalJamEl.textContent = `${filteredTotalJam} Jam`;
+  const totalFormatted = Number.isInteger(filteredTotalJam) ? filteredTotalJam : filteredTotalJam.toFixed(1);
+  totalJamEl.textContent = `${totalFormatted} Jam`;
 }
 
 function showToast(message, isError = false) {
@@ -3362,8 +3530,6 @@ function showToast(message, isError = false) {
         if (submitLabel) {
           if (role === 'operator') {
             submitLabel.textContent = 'Ajukan ke Koordinator';
-          } else if (role === 'koordinator') {
-            submitLabel.textContent = 'Ajukan ke TL Teknik';
           } else {
             submitLabel.textContent = 'Simpan & Kirim SPKL';
           }
@@ -3430,6 +3596,7 @@ function showToast(message, isError = false) {
           };
           overlay.onclick = (e) => { if (e.target === overlay) overlay.style.display = 'none'; };
         }
+        window.showCustomConfirm = showCustomConfirm;
 
         // ── Auto uppercase keteranganLembur saat ketik ──────────────
         const keterEl = document.getElementById('keteranganLembur');
